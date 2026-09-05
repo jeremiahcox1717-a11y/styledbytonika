@@ -78,3 +78,27 @@ if (dateInput && timeSelect && form) {
     fillTimes();
   });
 }
+
+const lightbox = document.querySelector("#lightbox");
+const lightboxImage = document.querySelector("#lightbox-image");
+const lightboxClose = document.querySelector("#lightbox-close");
+
+if (lightbox && lightboxImage) {
+  document.querySelectorAll(".work-item").forEach((button) => {
+    button.addEventListener("click", () => {
+      lightboxImage.src = button.dataset.full;
+      lightboxImage.alt = button.querySelector("img").alt;
+      lightbox.hidden = false;
+    });
+  });
+  lightboxClose.addEventListener("click", () => {
+    lightbox.hidden = true;
+    lightboxImage.src = "";
+  });
+  lightbox.addEventListener("click", (event) => {
+    if (event.target === lightbox) {
+      lightbox.hidden = true;
+      lightboxImage.src = "";
+    }
+  });
+}
