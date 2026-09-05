@@ -116,6 +116,30 @@ ul {
   padding: 0.78rem 3.2rem;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.btn-book {
+  display: block;
+  width: fit-content;
+  margin: 2rem auto 0;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--neon);
+  border: 1px solid var(--neon);
+  padding: 0.9rem 1.5rem;
+  box-shadow: 0 0 24px rgba(78, 195, 255, 0.35);
+}
+
+.btn-book:hover {
+  background: var(--neon);
+  color: #000;
+}
+
 .stylist {
   padding: 6.5rem 8vw;
   background: #000;
@@ -299,10 +323,184 @@ ul {
   font-size: 1.05rem;
 }
 
+.book-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(78, 195, 255, 0.08), transparent 50%),
+    #000;
+}
+
+.book-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 6vw;
+}
+
+.book-logo {
+  font-size: 1.7rem;
+}
+
+.book-back {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.book-back:hover {
+  color: var(--neon);
+}
+
+.book {
+  padding: 2.5rem 6vw 6rem;
+  text-align: center;
+}
+
+.book h1 {
+  font-size: clamp(3.4rem, 8vw, 5.8rem);
+  margin: 0.35rem 0 1rem;
+}
+
+.book-lede {
+  max-width: 36rem;
+  margin: 0 auto 2.4rem;
+  color: #d8d8d8;
+}
+
+.book-form {
+  width: min(100%, 38rem);
+  margin: 0 auto;
+  text-align: left;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+
+.field label,
+.check {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.optional {
+  letter-spacing: 0.08em;
+  color: #9a9a9a;
+  text-transform: none;
+  font-family: var(--body);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-family: var(--body);
+  font-size: 1.1rem;
+  padding: 0.75rem 0.85rem;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px rgba(78, 195, 255, 0.18);
+}
+
+select {
+  color-scheme: dark;
+}
+
+.check {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-family: var(--body);
+  font-size: 1rem;
+}
+
+.check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.2rem;
+  accent-color: var(--neon);
+}
+
+.form-error {
+  color: #ff8fb6;
+  font-size: 1rem;
+}
+
+.submit {
+  display: inline-block;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--neon);
+  color: #000;
+  border: 0;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 0 22px rgba(78, 195, 255, 0.35);
+}
+
+.submit:hover {
+  background: #fff;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: grid;
+  place-items: center;
+  z-index: 80;
+  padding: 1.5rem;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-card {
+  width: min(100%, 28rem);
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 2.4rem 1.8rem;
+  text-align: center;
+}
+
+.modal-card h2 {
+  font-size: 3.4rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.modal-card p {
+  margin-bottom: 1.5rem;
+}
+
 @media (max-width: 900px) {
   .stylist-inner,
   .hours-grid,
-  .policy-grid {
+  .policy-grid,
+  .field-row {
     grid-template-columns: 1fr;
   }
 

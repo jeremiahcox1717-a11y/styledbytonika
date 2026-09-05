@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Your Appointment | Styled by Tonika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Great+Vibes&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="book-page">
+  <header class="book-top">
+    <a class="neon book-logo" href="index.html">Styled by Tonika</a>
+    <a class="book-back" href="index.html">Home</a>
+  </header>
+
+  <section class="book">
+    <p class="kicker">Reserve your chair</p>
+    <h1 class="neon">Book Your Appointment</h1>
+    <p class="book-lede">
+      Pick a service and a time that works. A non-refundable $20 deposit holds
+      your spot and goes toward your balance. Remaining balance is cash only.
+    </p>
+
+    <form class="book-form" id="booking-form" novalidate>
+      <div class="field">
+        <label for="name">Full name</label>
+        <input id="name" name="name" type="text" autocomplete="name" required />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="service">Service</label>
+        <select id="service" name="service" required>
+          <option value="" disabled selected>Select a service</option>
+          <option>Loc retwist</option>
+          <option>Soft locs</option>
+          <option>Box braids</option>
+          <option>Knotless braids</option>
+          <option>Twists</option>
+          <option>Styling / updo</option>
+          <option>Consultation</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="date">Preferred date</label>
+          <input id="date" name="date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="time">Preferred time</label>
+          <select id="time" name="time" required>
+            <option value="" disabled selected>Select a date first</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="notes">Notes <span class="optional">(optional)</span></label>
+        <textarea id="notes" name="notes" rows="4" placeholder="Hair length, style inspo, travel location…"></textarea>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="deposit" name="deposit" required />
+        <span>I understand a non-refundable $20 deposit is required, and the remaining balance is cash only.</span>
+      </label>
+      <p class="form-error" id="form-error" hidden></p>
+      <button class="submit" type="submit">Request Appointment</button>
+    </form>
+  </section>
+
+  <div class="modal" id="success-modal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="success-title" aria-modal="true">
+      <p class="kicker">You’re on the list</p>
+      <h2 class="neon" id="success-title">Request received</h2>
+      <p id="success-copy"></p>
+      <a class="submit" href="index.html">Back to home</a>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
