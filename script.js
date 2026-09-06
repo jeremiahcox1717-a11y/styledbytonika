@@ -18,9 +18,9 @@ if (dateInput && timeSelect && form) {
 
   function hoursFor(dateStr) {
     const day = new Date(`${dateStr}T12:00:00`).getDay();
-    if (day === 0) return null;
-    if (day >= 1 && day <= 3) return { start: 9, end: 14 };
-    return { start: 9, end: 22 };
+    if (day === 6) return { start: 8, end: 17 };
+    if (day === 0) return { start: 9, end: 15 };
+    return null;
   }
 
   function fillTimes() {
@@ -30,7 +30,7 @@ if (dateInput && timeSelect && form) {
       return;
     }
     if (!hours) {
-      timeSelect.innerHTML = `<option value="" disabled selected>Closed on Sundays</option>`;
+      timeSelect.innerHTML = `<option value="" disabled selected>Closed weekdays — Saturday & Sunday only</option>`;
       return;
     }
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
@@ -57,7 +57,7 @@ if (dateInput && timeSelect && form) {
     const data = Object.fromEntries(new FormData(form));
     if (hoursFor(data.date) == null) {
       formError.hidden = false;
-      formError.textContent = "Sorry — we’re closed on Sundays. Please pick another day.";
+      formError.textContent = "Sorry — we’re only open Saturday and Sunday. Please pick a weekend date.";
       return;
     }
     if (!data.time) {

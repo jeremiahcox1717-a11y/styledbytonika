@@ -1,8 +1,8 @@
 :root {
   --black: #000;
-  --neon: #6ee7ff;
-  --banner: #5ec8e4;
-  --pink: #ff6ad5;
+  --neon: #ff4ec8;
+  --banner: #ff4ec8;
+  --pink: #ff4ec8;
   --script: "Great Vibes", cursive;
   --display: "Cinzel", serif;
   --body: "Cormorant Garamond", serif;
@@ -40,9 +40,9 @@ ul {
   letter-spacing: 0.02em;
   -webkit-text-stroke: 0.35px var(--neon);
   text-shadow:
-    0 0 8px rgba(126, 214, 255, 0.95),
-    0 0 18px rgba(78, 195, 255, 0.75),
-    0 0 36px rgba(78, 195, 255, 0.45);
+    0 0 8px rgba(255, 78, 200, 0.95),
+    0 0 18px rgba(255, 78, 200, 0.75),
+    0 0 36px rgba(255, 78, 200, 0.45);
 }
 
 .kicker {
@@ -69,17 +69,28 @@ ul {
 .hero-photos {
   position: absolute;
   inset: 0;
+  display: flex;
   overflow: hidden;
   z-index: -2;
 }
 
 .hero-photos img {
-  width: 100%;
-  height: 100%;
+  flex: 1 0 51%;
+  width: 51%;
   max-width: none;
+  height: 100%;
   object-fit: cover;
-  object-position: 48% 18%;
-  filter: brightness(0.92) contrast(1.05) saturate(0.96);
+  filter: brightness(0.88) contrast(1.05) saturate(0.95);
+}
+
+.hero-photos img:first-child {
+  margin-right: -2%;
+  object-position: 58% 22%;
+}
+
+.hero-photos img:last-child {
+  margin-left: -2%;
+  object-position: 42% 18%;
 }
 
 .hero-veil {
@@ -107,13 +118,13 @@ ul {
   font-size: clamp(4.2rem, 12vw, 8.5rem);
   line-height: 0.92;
   margin: 1.1rem 0 1.4rem;
-  color: #fff;
+  color: var(--neon);
   -webkit-text-stroke: 0;
   text-shadow:
-    0 0 10px rgba(110, 231, 255, 1),
-    0 0 22px rgba(78, 195, 255, 0.95),
-    0 0 48px rgba(78, 195, 255, 0.7),
-    0 0 80px rgba(78, 195, 255, 0.4);
+    0 0 10px rgba(255, 78, 200, 1),
+    0 0 22px rgba(255, 78, 200, 0.95),
+    0 0 48px rgba(255, 78, 200, 0.7),
+    0 0 80px rgba(255, 78, 200, 0.4);
 }
 
 .banner {
@@ -147,7 +158,7 @@ a {
   color: var(--neon);
   border: 1px solid var(--neon);
   padding: 0.9rem 1.5rem;
-  box-shadow: 0 0 24px rgba(78, 195, 255, 0.35);
+  box-shadow: 0 0 24px rgba(255, 78, 200, 0.35);
 }
 
 .btn-book:hover {
@@ -192,26 +203,26 @@ a {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 20%;
+  object-position: 52% 46%;
   border-radius: 50%;
   position: relative;
   z-index: 1;
   filter: none;
   border: 3px solid var(--neon);
   box-shadow:
-    0 0 18px rgba(110, 231, 255, 0.9),
-    0 0 36px rgba(255, 106, 213, 0.45);
+    0 0 18px rgba(255, 78, 200, 0.9),
+    0 0 36px rgba(255, 78, 200, 0.45);
 }
 
 .portrait-glow {
   position: absolute;
   inset: -12px;
   border-radius: 50%;
-  background: conic-gradient(from 200deg, transparent, var(--neon), transparent 30%, var(--pink), transparent 62%, #7ed6ff, transparent 88%);
+  background: conic-gradient(from 200deg, transparent, var(--neon), transparent 28%, #fff, transparent 62%, var(--neon), transparent 88%);
   filter: blur(1px);
   box-shadow:
-    0 0 22px rgba(110, 231, 255, 0.55),
-    0 0 40px rgba(255, 106, 213, 0.45);
+    0 0 22px rgba(255, 78, 200, 0.7),
+    0 0 40px rgba(255, 78, 200, 0.45);
 }
 
 .portrait-sparkles {
@@ -221,8 +232,8 @@ a {
   pointer-events: none;
   background-image:
     radial-gradient(circle, #ff8ae0 0 1.5px, transparent 2.2px),
-    radial-gradient(circle, #c9a0ff 0 1.2px, transparent 2px),
-    radial-gradient(circle, #7ed6ff 0 1.4px, transparent 2.1px),
+    radial-gradient(circle, #ff4ec8 0 1.2px, transparent 2px),
+    radial-gradient(circle, #ffffff 0 1.4px, transparent 2.1px),
     radial-gradient(circle, #ff6ad5 0 1px, transparent 1.8px),
     radial-gradient(circle, #ffffff 0 1px, transparent 1.7px),
     radial-gradient(circle, #ff8ae0 0 1.3px, transparent 2px);
@@ -273,8 +284,8 @@ a {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.22), rgba(4, 10, 16, 0.12) 48%, rgba(0, 0, 0, 0.36)),
-    rgba(6, 14, 22, 0.16);
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.12) 48%, rgba(0, 0, 0, 0.36)),
+    rgba(0, 0, 0, 0.16);
 }
 
 .hours-grid {
@@ -387,6 +398,13 @@ a {
   color: #ececec;
 }
 
+.before {
+  position: relative;
+  isolation: isolate;
+  padding: 6.5rem 6vw 5rem;
+  text-align: center;
+}
+
 .work {
   padding: 5.5rem 6vw 5rem;
   background: #000;
@@ -479,7 +497,7 @@ a {
 .book-page {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at top, rgba(78, 195, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse at top, rgba(255, 78, 200, 0.1), transparent 50%),
     #000;
 }
 
@@ -569,7 +587,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--neon);
-  box-shadow: 0 0 0 3px rgba(78, 195, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
 }
 
 select {
@@ -611,7 +629,7 @@ select {
   border: 0;
   padding: 1rem 1.2rem;
   cursor: pointer;
-  box-shadow: 0 0 22px rgba(78, 195, 255, 0.35);
+  box-shadow: 0 0 22px rgba(255, 78, 200, 0.35);
 }
 
 .submit:hover {
@@ -649,12 +667,201 @@ select {
   margin-bottom: 1.5rem;
 }
 
+.before .policies-title {
+  position: relative;
+  z-index: 1;
+}
+
+.before-grid {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 52rem);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.before-card {
+  position: static;
+  padding: 1.6rem 1.3rem;
+  transform: none;
+}
+
+.before-card p {
+  font-size: 1.05rem;
+  color: #f0f0f0;
+}
+
+.services,
+.thanks {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 5.5rem 6vw;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 3rem;
+  align-items: center;
+  background: #000;
+}
+
+.services h2,
+.thanks h2,
+.selfies h2 {
+  font-size: clamp(3.6rem, 8vw, 6.2rem);
+  line-height: 0.9;
+  margin-bottom: 1.4rem;
+}
+
+.service-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+  max-width: 28rem;
+}
+
+.service-list li {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  padding: 0.85rem 0.6rem;
+  min-height: 2.8rem;
+}
+
+.polaroid-stack {
+  position: relative;
+  min-height: 26rem;
+}
+
+.polaroid {
+  width: min(58%, 16rem);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 8px solid #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  position: absolute;
+}
+
+.tilt-left {
+  transform: rotate(-9deg);
+  left: 8%;
+  top: 0;
+}
+
+.tilt-right {
+  transform: rotate(8deg);
+  right: 6%;
+  bottom: 0;
+}
+
+.selfies {
+  position: relative;
+  isolation: isolate;
+  padding: 5.5rem 6vw;
+}
+
+.selfies-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.selfies-bg img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  filter: brightness(0.42) contrast(1.05);
+}
+
+.selfies-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.phones {
+  position: relative;
+  min-height: 24rem;
+}
+
+.phone {
+  position: absolute;
+  width: 11.5rem;
+  padding: 0.55rem;
+  background: #111;
+  border: 3px solid #2a2a2a;
+  border-radius: 1.6rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.phone img {
+  width: 100%;
+  height: 18rem;
+  object-fit: cover;
+  border-radius: 1.1rem;
+}
+
+.phone.tilt-left {
+  left: 6%;
+  top: 0;
+}
+
+.phone.tilt-right {
+  right: 10%;
+  top: 3.2rem;
+}
+
+.tag-box {
+  margin-top: 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1.1rem 1.3rem;
+  width: fit-content;
+  font-family: var(--display);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.thanks-copy {
+  text-align: left;
+}
+
+.btn-pink {
+  display: inline-block;
+  margin: 1.4rem 0 1rem;
+  background: var(--neon);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 1rem 1.6rem;
+  box-shadow: 0 0 22px rgba(255, 78, 200, 0.4);
+}
+
+.thanks-note {
+  font-size: 1.05rem;
+}
+
 @media (max-width: 900px) {
   .stylist-inner,
   .hours-grid,
   .policy-grid,
   .field-row,
-  .work-grid {
+  .work-grid,
+  .before-grid,
+  .services,
+  .thanks,
+  .selfies-inner {
     grid-template-columns: 1fr;
   }
 
@@ -688,5 +895,29 @@ select {
     padding: 0.7rem 1.4rem;
     letter-spacing: 0.22em;
     font-size: 0.7rem;
+  }
+
+  .service-list {
+    max-width: none;
+  }
+
+  .polaroid-stack,
+  .phones {
+    min-height: 22rem;
+    margin-bottom: 1rem;
+  }
+
+  .thanks-copy,
+  .selfies-copy {
+    text-align: center;
+  }
+
+  .tag-box {
+    margin-inline: auto;
+  }
+
+  .btn-pink {
+    display: block;
+    text-align: center;
   }
 }
