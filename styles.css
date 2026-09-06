@@ -1,7 +1,7 @@
 :root {
   --black: #000;
   --neon: #6ee7ff;
-  --banner: #6ec8ea;
+  --banner: #5ec8e4;
   --pink: #ff6ad5;
   --script: "Great Vibes", cursive;
   --display: "Cinzel", serif;
@@ -79,19 +79,16 @@ ul {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(1.12) contrast(1.04) saturate(1.08);
+  filter: brightness(0.9) contrast(1.06) saturate(0.9);
 }
 
 .hero-veil {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.08),
-    rgba(0, 0, 0, 0.02) 50%,
-    rgba(0, 0, 0, 0.16)
-  );
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.22), rgba(4, 10, 16, 0.12) 48%, rgba(0, 0, 0, 0.36)),
+    rgba(6, 14, 22, 0.16);
 }
 
 .hero-content {
@@ -177,6 +174,7 @@ a {
 .bio {
   max-width: 36rem;
   font-size: 1.22rem;
+  color: #ececec;
 }
 
 .portrait-wrap {
@@ -194,6 +192,7 @@ a {
   border-radius: 50%;
   position: relative;
   z-index: 1;
+  filter: brightness(0.9) contrast(1.05) saturate(0.95);
   border: 3px solid var(--neon);
   box-shadow:
     0 0 18px rgba(110, 231, 255, 0.9),
@@ -250,21 +249,23 @@ a {
   z-index: -2;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 3px;
+  gap: 0;
 }
 
 .hours-bg img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.38) contrast(1.1);
+  filter: brightness(0.9) contrast(1.06) saturate(0.9);
 }
 
 .hours-veil {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55));
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.22), rgba(4, 10, 16, 0.12) 48%, rgba(0, 0, 0, 0.36)),
+    rgba(6, 14, 22, 0.16);
 }
 
 .hours-grid {
@@ -280,7 +281,7 @@ a {
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.42);
 }
 
 .card h2 {
@@ -369,10 +370,12 @@ a {
   font-size: 2.15rem;
   font-weight: 400;
   margin-bottom: 0.85rem;
+  color: #fff;
 }
 
 .policy p {
   font-size: 1.05rem;
+  color: #ececec;
 }
 
 .work {
