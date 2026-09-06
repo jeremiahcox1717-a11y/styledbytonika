@@ -79,16 +79,19 @@ ul {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.55) contrast(1.12) saturate(0.92);
+  filter: brightness(1.12) contrast(1.04) saturate(1.08);
 }
 
 .hero-veil {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.15) 40%, rgba(0, 0, 0, 0.72)),
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08),
+    rgba(0, 0, 0, 0.02) 50%,
+    rgba(0, 0, 0, 0.16)
+  );
 }
 
 .hero-content {
