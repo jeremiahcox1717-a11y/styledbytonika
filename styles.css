@@ -186,11 +186,11 @@ a {
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  background: conic-gradient(from 200deg, transparent, var(--pink), transparent 40%, #e879f9, transparent 75%);
+  background: conic-gradient(from 180deg, transparent, var(--neon), transparent 28%, var(--pink), transparent 62%, #7ed6ff, transparent 88%);
   filter: blur(1px);
   box-shadow:
-    0 0 24px rgba(255, 106, 213, 0.55),
-    0 0 60px rgba(232, 121, 249, 0.35);
+    0 0 20px rgba(126, 214, 255, 0.45),
+    0 0 36px rgba(255, 106, 213, 0.4);
 }
 
 .hours-contact {
@@ -206,6 +206,9 @@ a {
   position: absolute;
   inset: 0;
   z-index: -2;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
 }
 
 .hours-bg img {
@@ -616,6 +619,14 @@ select {
   }
 
   .hero-photos img:last-child {
+    display: none;
+  }
+
+  .hours-bg {
+    grid-template-columns: 1fr;
+  }
+
+  .hours-bg img:nth-child(n + 2) {
     display: none;
   }
 
