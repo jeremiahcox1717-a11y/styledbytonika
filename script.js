@@ -19,7 +19,7 @@ if (dateInput && timeSelect && form) {
   function hoursFor(dateStr) {
     const day = new Date(`${dateStr}T12:00:00`).getDay();
     if (day === 0) return null;
-    if (day >= 1 && day <= 3) return { start: 9, end: 15 };
+    if (day >= 1 && day <= 3) return { start: 9, end: 14 };
     return { start: 9, end: 22 };
   }
 

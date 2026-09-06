@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Great+Vibes&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <section class="hero">
@@ -18,7 +18,7 @@
     <div class="hero-veil"></div>
     <div class="hero-content">
       <p class="kicker">Welcome to our booking website</p>
-      <h1 class="neon">Styled by Tonika</h1>
+      <h1 class="hero-title">Styled by Tonika</h1>
       <p class="banner">By Tonika Lord</p>
       <a class="btn-book" href="book.html">Book Your Appointment</a>
     </div>
@@ -38,6 +38,7 @@
         </p>
       </div>
       <div class="portrait-wrap">
+        <div class="portrait-sparkles" aria-hidden="true"></div>
         <div class="portrait-glow"></div>
         <img class="portrait" src="images/stylist-portrait.jpg" alt="Tonika Lord" />
       </div>
@@ -46,9 +47,9 @@
 
     <section class="hours-contact">
     <div class="hours-bg" aria-hidden="true">
+      <img src="images/work-cornrows.jpg" alt="" />
       <img src="images/work-locs.jpg" alt="" />
       <img src="images/work-box-braids.jpg" alt="" />
-      <img src="images/work-cornrows.jpg" alt="" />
     </div>
     <div class="hours-veil"></div>
     <div class="hours-grid">
@@ -57,7 +58,7 @@
         <ul class="hours-list">
           <li>
             <span>Monday – Wednesday</span>
-            <span>9:00 AM – 3:00 PM</span>
+            <span>9:00 AM – 2:00 PM</span>
           </li>
           <li>
             <span>Thursday – Saturday</span>
@@ -76,7 +77,7 @@
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3c0 1.1-.9 2-2 2C9.4 19.5 4.5 14.6 4.5 5.5c0-1.1.9-2 2-2Z"/></svg>
             </span>
-            (289) 216-0118
+            (252) 515-0118
           </li>
           <li>
             <span class="icon" aria-hidden="true">
@@ -101,23 +102,24 @@
       <article class="policy">
         <div class="policy-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M8 13h8M8 9h4"/>
-            <rect x="4" y="5" width="16" height="14" rx="2"/>
-            <path d="M8 19v2M16 19v2"/>
+            <path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z"/>
+            <path d="M3 8 6 4h12l3 4"/>
+            <path d="M12 12v5"/>
+            <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
           </svg>
         </div>
         <h3>Deposits</h3>
         <p>
           A non-refundable $20 deposit is required to secure your appointment.
           This amount will be applied toward your final balance. Remaining
-          balance MUST be in Cash only.
+          Balance MUST be in Cash only.
         </p>
       </article>
       <article class="policy">
         <div class="policy-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M2 16 22 8l-6 12-3-5-5-3Z"/>
-            <path d="m13 15 2 5"/>
+            <path d="M3 13 21 8l-3.5 9H8.5L3 13Z"/>
+            <path d="M9 17v3l3-1.5L15 20v-3"/>
           </svg>
         </div>
         <h3>Traveling</h3>
@@ -144,7 +146,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
             <rect x="3" y="5" width="18" height="16" rx="2"/>
             <path d="M8 3v4M16 3v4M3 10h18"/>
-            <path d="M9 15h.01M12 15h.01M15 15h.01"/>
+            <circle cx="16.2" cy="16.2" r="3.3"/>
+            <path d="M16.2 14.7v1.7l1.1.7"/>
           </svg>
         </div>
         <h3>Reschedule</h3>
@@ -156,6 +159,6 @@
     </div>
   </section>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>
