@@ -9,8 +9,8 @@ OUT = SRC
 PINK = (255, 78, 200)
 WHITE = (255, 255, 255)
 
-# Cover the existing white disks completely.
-CIRCLES = [(1204, 324, 35), (1203, 414, 35), (1203, 496, 35)]
+# Cover leftover white rings completely.
+CIRCLES = [(1204, 324, 38), (1203, 414, 38), (1203, 496, 38)]
 
 
 def draw_phone(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: float) -> None:
@@ -22,25 +22,27 @@ def draw_phone(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: float) -> None:
 
 
 def draw_mail(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: float) -> None:
-    env = [cx - s * 0.78, cy - s * 0.50, cx + s * 0.78, cy + s * 0.52]
-    draw.rounded_rectangle(env, radius=int(s * 0.10), fill=WHITE)
-    inner = [cx - s * 0.62, cy - s * 0.34, cx + s * 0.62, cy + s * 0.36]
-    draw.rectangle(inner, fill=PINK)
-    draw.polygon(
-        [
-            (cx - s * 0.78, cy - s * 0.50),
-            (cx, cy + s * 0.08),
-            (cx + s * 0.78, cy - s * 0.50),
-        ],
+    draw.rounded_rectangle(
+        [cx - s * 0.84, cy - s * 0.56, cx + s * 0.84, cy + s * 0.56],
+        radius=int(s * 0.12),
         fill=WHITE,
     )
     draw.polygon(
         [
-            (cx - s * 0.58, cy - s * 0.34),
-            (cx, cy + s * 0.12),
-            (cx + s * 0.58, cy - s * 0.34),
+            (cx - s * 0.84, cy - s * 0.56),
+            (cx, cy + s * 0.14),
+            (cx + s * 0.84, cy - s * 0.56),
         ],
         fill=PINK,
+    )
+    draw.line(
+        [
+            (cx - s * 0.84, cy + s * 0.56),
+            (cx, cy + s * 0.04),
+            (cx + s * 0.84, cy + s * 0.56),
+        ],
+        fill=PINK,
+        width=max(2, int(s * 0.07)),
     )
 
 
@@ -71,7 +73,7 @@ def main() -> None:
     painters = [draw_phone, draw_mail, draw_instagram]
     for (cx, cy, rad), paint in zip(CIRCLES, painters):
         draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=(*PINK, 255))
-        paint(draw, cx, cy, rad * 0.78)
+        paint(draw, cx, cy, rad * 0.86)
     out = Image.alpha_composite(im, overlay).convert("RGB")
     out.save(OUT, "JPEG", quality=92, optimize=True, progressive=True)
     crop = out.crop((1160, 280, 1260, 540))
