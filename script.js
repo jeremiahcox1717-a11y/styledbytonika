@@ -79,7 +79,10 @@ if (dateInput && timeSelect && form) {
       day: "numeric",
     });
 
-    successCopy.textContent = `Thank you, ${data.name}. Your ${data.service.toLowerCase()} request for ${when} at ${data.time} is in. I’ll confirm shortly by text or email.`;
+    const where = [data.address, data.address2, data.city, data.state, data.zip]
+      .filter(Boolean)
+      .join(", ");
+    successCopy.textContent = `Thank you, ${data.name}. Your ${data.service.toLowerCase()} request for ${when} at ${data.time} is in${where ? ` at ${where}` : ""}. I’ll confirm shortly by text or email.`;
     modal.hidden = false;
     form.reset();
     fillTimes();

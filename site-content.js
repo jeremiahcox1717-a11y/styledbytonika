@@ -32,6 +32,7 @@ async function loadSiteContent() {
     text("[data-field='instagram']", c.instagram);
     text("[data-field='hashtag']", c.hashtag ? `Hashtag ${c.hashtag}` : null);
     text("[data-field='book-lede']", c.bookLede);
+    text("[data-field='address-note']", c.addressNote);
     text("[data-field='thanks-note']", c.thanksNote);
     text("[data-field='hours-sat-label']", c.hours?.saturday?.label);
     text("[data-field='hours-sat-text']", c.hours?.saturday?.text);

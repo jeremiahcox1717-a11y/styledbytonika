@@ -763,6 +763,28 @@ a {
   gap: 1.1rem;
 }
 
+.address-block {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.15rem 0 0.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.address-block .kicker {
+  margin-bottom: 0;
+}
+
+.address-note {
+  margin: 0;
+  color: #d8d8d8;
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.field-row-city {
+  grid-template-columns: 1.4fr 0.7fr 0.85fr;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1213,7 +1235,8 @@ select {
     padding: 1.1rem 1.05rem 5.5rem;
   }
 
-  .field-row {
+  .field-row,
+  .field-row-city {
     grid-template-columns: 1fr;
   }
 

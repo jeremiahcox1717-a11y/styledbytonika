@@ -98,6 +98,11 @@ function applyLocalEdit(message, content) {
     else next.services.push(name);
     changed = true;
   }
+  const address = message.match(/address[:\s]+(.+)/i);
+  if (address && /address|location|travel/.test(text)) {
+    next.addressNote = address[1].trim();
+    changed = true;
+  }
   const bio = message.match(/bio[:\s]+([\s\S]+)/i);
   if (bio) {
     next.bio = bio[1].trim();
