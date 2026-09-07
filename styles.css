@@ -693,7 +693,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem max(6.4rem, calc(env(safe-area-inset-right) + 5.6rem)) 1.1rem 6vw;
+  padding: 1.1rem max(7.6rem, calc(env(safe-area-inset-right) + 7rem)) 1.1rem 6vw;
 }
 
 .book-logo {
@@ -1173,7 +1173,7 @@ select {
   }
 
   .book-top {
-    padding: max(0.65rem, env(safe-area-inset-top)) max(4.9rem, calc(env(safe-area-inset-right) + 4.4rem)) 0.75rem max(0.8rem, env(safe-area-inset-left));
+    padding: max(0.65rem, env(safe-area-inset-top)) max(6.3rem, calc(env(safe-area-inset-right) + 5.7rem)) 0.75rem max(0.8rem, env(safe-area-inset-left));
     gap: 0.6rem;
   }
 
