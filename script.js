@@ -48,7 +48,7 @@ if (dateInput && timeSelect && form) {
           { hour: "numeric", minute: "2-digit" }
         );
         const opt = document.createElement("option");
-        opt.value = label;
+        opt.value = `${String(h).padStart(2, "0")}:${m}`;
         opt.textContent = label;
         timeSelect.appendChild(opt);
       }
@@ -57,7 +57,70 @@ if (dateInput && timeSelect && form) {
 
   dateInput.addEventListener("change", fillTimes);
 
-  form.addEventListener("submit", (event) => {
+  const TZ = "America/New_York";
+  const submitBtn = form.querySelector('button[type="submit"]');
+
+  function parseClock(value) {
+    const ampm = String(value || "").trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (ampm) {
+      let h = Number(ampm[1]);
+      const min = Number(ampm[2]);
+      const mer = ampm[3].toUpperCase();
+      if (mer === "PM" && h < 12) h += 12;
+      if (mer === "AM" && h === 12) h = 0;
+      return { h, min };
+    }
+    const hm = String(value || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (hm) return { h: Number(hm[1]), min: Number(hm[2]) };
+    return null;
+  }
+
+  function tzOffsetMs(timeZone, date) {
+    const tz = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "longOffset",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .find((p) => p.type === "timeZoneName")?.value || "GMT+0";
+    const m = tz.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+    if (!m) return 0;
+    const sign = m[1] === "-" ? -1 : 1;
+    return sign * (Number(m[2]) * 60 + Number(m[3] || 0)) * 60 * 1000;
+  }
+
+  function appointmentUtc(dateStr, h, min) {
+    const [y, mo, d] = dateStr.split("-").map(Number);
+    let utc = Date.UTC(y, mo - 1, d, h, min, 0);
+    const off = tzOffsetMs(TZ, new Date(utc));
+    utc = Date.UTC(y, mo - 1, d, h, min, 0) - off;
+    const off2 = tzOffsetMs(TZ, new Date(utc));
+    if (off2 !== off) utc = Date.UTC(y, mo - 1, d, h, min, 0) - off2;
+    return utc;
+  }
+
+  function formatWhen(dateStr, timeValue) {
+    const clock = parseClock(timeValue);
+    const start = clock ? appointmentUtc(dateStr, clock.h, clock.min) : Date.parse(`${dateStr}T12:00:00`);
+    const day = new Date(start).toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: TZ,
+    });
+    const timeLabel = clock
+      ? new Date(start).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: TZ,
+        })
+      : timeValue;
+    return { day, timeLabel, start };
+  }
+
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     formError.hidden = true;
 
@@ -73,18 +136,64 @@ if (dateInput && timeSelect && form) {
       return;
     }
 
-    const when = new Date(`${data.date}T12:00:00`).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
-
+    const { day, timeLabel, start } = formatWhen(data.date, data.time);
     const where = [data.address, data.address2, data.city, data.state, data.zip]
       .filter(Boolean)
       .join(", ");
-    successCopy.textContent = `Thank you, ${data.name}. Your ${data.service.toLowerCase()} request for ${when} at ${data.time} is in${where ? ` at ${where}` : ""}. I’ll confirm shortly by text or email.`;
+    const hours = Number(window.__SITE__?.reminderHours) || 3;
+    const remindOn = data["sms-reminder"] === "on";
+    let reminderLine = "";
+
+    if (remindOn) {
+      const webhook = String(window.__SITE__?.smsWebhook || "").trim();
+      if (webhook) {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending…";
+        }
+        try {
+          const res = await fetch(webhook, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: data.name,
+              phone: data.phone,
+              date: data.date,
+              time: data.time,
+              hours,
+            }),
+          });
+          const out = await res.json().catch(() => ({}));
+          if (res.ok && out.ok) {
+            const around = out.remindLabel || new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: TZ,
+            });
+            reminderLine = ` You’ll get a text reminder ${hours} hours before (${around}) with the day and time.`;
+          }
+        } catch {
+          /* booking still goes through */
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Request Appointment";
+        }
+      } else {
+        const around = new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: TZ,
+        });
+        reminderLine = ` You’ll get a text reminder ${hours} hours before (${around}) with the day and time.`;
+      }
+    }
+
+    successCopy.textContent = `Thank you, ${data.name}. Your ${data.service.toLowerCase()} request for ${day} at ${timeLabel} is in${where ? ` at ${where}` : ""}. I’ll confirm shortly by text or email.${reminderLine}`;
     modal.hidden = false;
     form.reset();
+    const remindBox = document.querySelector("#sms-reminder");
+    if (remindBox) remindBox.checked = true;
     fillTimes();
   });
 }
