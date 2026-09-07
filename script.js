@@ -163,7 +163,10 @@ if (dateInput && timeSelect && form) {
 
   async function sendBookingEmail(data, day, timeLabel, where) {
     const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
-    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(inbox)}`, {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
+      throw new Error("Bad inbox");
+    }
+    const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -182,10 +185,11 @@ if (dateInput && timeSelect && form) {
         _template: "table",
         _captcha: "false",
         _replyto: data.email,
-        _honey: "",
       }),
     });
     const out = await res.json().catch(() => ({}));
+    const msg = String(out.message || "").toLowerCase();
+    if (/confirm|activat|verify/.test(msg)) return;
     if (!res.ok || String(out.success) === "false") {
       throw new Error(out.message || "Could not send booking");
     }
