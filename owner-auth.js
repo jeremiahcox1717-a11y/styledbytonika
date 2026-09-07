@@ -10,7 +10,8 @@ async function sha256(text) {
 }
 
 function storedHash() {
-  return (window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash) || localStorage.getItem(HASH_KEY) || "";
+  const fromConfig = window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash;
+  return String(fromConfig || localStorage.getItem(HASH_KEY) || "").trim().toLowerCase();
 }
 
 function saveHash(hash) {
