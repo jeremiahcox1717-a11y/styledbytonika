@@ -63,6 +63,8 @@ ul {
   z-index: 20;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.85rem 6vw;
   background: rgba(0, 0, 0, 0.92);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -72,21 +74,36 @@ ul {
   font-size: 1.65rem;
 }
 
-.nav-book {
+.nav-ig {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
   font-family: var(--display);
   font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #fff;
   background: var(--neon);
-  padding: 0.7rem 1.15rem;
+  padding: 0.7rem 1.05rem;
   box-shadow: 0 0 18px rgba(255, 78, 200, 0.45);
+}
+
+.nav-ig svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.book-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .book-bubble {
   position: fixed;
-  left: max(1.15rem, env(safe-area-inset-left));
+  right: max(1.15rem, env(safe-area-inset-right));
   bottom: max(1.15rem, env(safe-area-inset-bottom));
   z-index: 40;
   width: 4.6rem;
@@ -1043,5 +1060,13 @@ select {
   .btn-pink {
     display: block;
     text-align: center;
+  }
+
+  .nav-ig span {
+    display: none;
+  }
+
+  .nav-ig {
+    padding: 0.65rem 0.75rem;
   }
 }
