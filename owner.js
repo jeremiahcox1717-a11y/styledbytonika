@@ -29,7 +29,7 @@ if (!storedHash()) {
 gateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   gateError.hidden = true;
-  const value = passInput.value.trim();
+  const value = passInput.value.trim().replace(/\.+$/, "");
   try {
     if (setupMode) {
       if (value.length < 8) {
