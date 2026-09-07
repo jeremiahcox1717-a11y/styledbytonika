@@ -110,6 +110,7 @@ function applyLocalEdit(message, content) {
     next.smsWebhook = webhook[0].replace(/[.,)]+$/, "");
     changed = true;
   }
+  const bio = message.match(/bio[:\s]+([\s\S]+)/i);
   if (bio) {
     next.bio = bio[1].trim();
     changed = true;
@@ -240,6 +241,7 @@ chatForm.addEventListener("submit", async (event) => {
 
 publishBtn.addEventListener("click", async () => {
   if (!siteContent) return;
+  if (smsWebhookInput) siteContent.smsWebhook = smsWebhookInput.value.trim();
   publishStatus.textContent = "Publishing…";
   try {
     await githubPut("content.json", `${JSON.stringify(siteContent, null, 2)}\n`, "Update site content from owner studio");

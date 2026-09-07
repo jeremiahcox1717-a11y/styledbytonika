@@ -41,6 +41,11 @@
   line-height: 1.6;
 }
 
+.owner-hint code {
+  font-size: 0.85em;
+  color: #fff;
+}
+
 .owner-gate-form {
   width: min(100%, 22rem);
   margin: 0 auto;
