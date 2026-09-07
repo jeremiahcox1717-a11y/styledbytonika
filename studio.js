@@ -12,11 +12,6 @@ const publishBtn = document.querySelector("#publish-btn");
 const publishStatus = document.querySelector("#publish-status");
 const geminiInput = document.querySelector("#gemini-key");
 const githubInput = document.querySelector("#github-token");
-const passwordForm = document.querySelector("#password-form");
-const passCurrent = document.querySelector("#pass-current");
-const passNew = document.querySelector("#pass-new");
-const passNew2 = document.querySelector("#pass-new-2");
-const passStatus = document.querySelector("#pass-status");
 
 let siteContent = null;
 
@@ -182,36 +177,7 @@ loadContent();
 
 document.querySelector("#lock-btn").addEventListener("click", () => {
   lockStudio();
-  window.location.href = "owner.html";
-});
-
-passwordForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  passStatus.textContent = "";
-  const current = passCurrent.value;
-  const next = passNew.value;
-  const confirm = passNew2.value;
-  try {
-    if (next.length < 8) {
-      passStatus.textContent = "Use at least 8 characters.";
-      return;
-    }
-    if (next !== confirm) {
-      passStatus.textContent = "Those new passwords do not match.";
-      return;
-    }
-    if ((await sha256(current)) !== storedHash()) {
-      passStatus.textContent = "Current password is wrong.";
-      return;
-    }
-    saveHash(await sha256(next));
-    passCurrent.value = "";
-    passNew.value = "";
-    passNew2.value = "";
-    passStatus.textContent = "Password saved on this device. Click Publish to live site if you also want this lock on your phone.";
-  } catch (err) {
-    passStatus.textContent = "Could not save the password. Try again.";
-  }
+  window.location.replace("owner.html");
 });
 
 geminiInput.addEventListener("change", () => {

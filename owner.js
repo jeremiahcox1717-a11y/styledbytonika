@@ -15,7 +15,7 @@ function showGateError(msg) {
 
 function goToStudio() {
   markUnlocked();
-  window.location.href = "studio.html";
+  window.location.replace("studio.html");
 }
 
 if (isUnlocked()) {
