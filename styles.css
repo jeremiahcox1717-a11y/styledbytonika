@@ -99,7 +99,7 @@ ul {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   pointer-events: none;
 }
 
@@ -109,30 +109,22 @@ ul {
   min-height: 100%;
   max-width: none;
   object-fit: cover;
-  object-position: center 28%;
-  filter: brightness(0.88) saturate(1);
+  filter: brightness(0.82) saturate(1);
 }
 
 .hero-bg img:first-child {
-  object-position: 28% 35%;
+  object-position: 35% 32%;
 }
 
 .hero-bg img:last-child {
-  object-position: 55% 30%;
+  object-position: 60% 28%;
 }
 
 .hero-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.12) 0%,
-      rgba(0, 0, 0, 0.48) 38%,
-      rgba(0, 0, 0, 0.48) 62%,
-      rgba(0, 0, 0, 0.12) 100%
-    );
+  background: rgba(0, 0, 0, 0.28);
 }
 
 .hero-content {
