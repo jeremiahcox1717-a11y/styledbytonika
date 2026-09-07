@@ -37,7 +37,7 @@ w2, h2 = p2.size
 print("p1", w, h, "p2", w2, h2)
 
 # Full hero band; CSS darkens the center so baked title stays hidden.
-save(p1.crop((0, 0, w, 135)), "hero-from-canva.jpg", (1600, 980))
+save(p1.crop((0, 22, w, 98)), "hero-from-canva.jpg", (1600, 800))
 save(p1.crop((0, 102, int(w * 0.20), 126)), "hero-locs-left.jpg", (720, 1080))
 save(p1.crop((int(w * 0.82), 102, w, 126)), "hero-locs-right.jpg", (720, 1080))
 
