@@ -18,8 +18,15 @@ if (dateInput && timeSelect && form) {
 
   function hoursFor(dateStr) {
     const day = new Date(`${dateStr}T12:00:00`).getDay();
-    if (day === 6) return { start: 8, end: 17 };
-    if (day === 0) return { start: 9, end: 15 };
+    const site = window.__SITE__;
+    if (day === 6) {
+      if (site?.hours?.saturday) return { start: site.hours.saturday.start, end: site.hours.saturday.end };
+      return { start: 8, end: 17 };
+    }
+    if (day === 0) {
+      if (site?.hours?.sunday) return { start: site.hours.sunday.start, end: site.hours.sunday.end };
+      return { start: 9, end: 15 };
+    }
     return null;
   }
 
