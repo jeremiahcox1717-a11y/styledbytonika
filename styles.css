@@ -187,24 +187,24 @@ ul {
 
 .book-bubble {
   position: fixed;
-  right: max(1.15rem, env(safe-area-inset-right));
+  left: max(1.15rem, env(safe-area-inset-left));
   bottom: max(1.15rem, env(safe-area-inset-bottom));
   z-index: 40;
-  width: 5.85rem;
-  height: 5.85rem;
+  width: 4.4rem;
+  height: 4.4rem;
   display: grid;
   place-items: center;
   text-align: center;
   background: var(--neon);
   color: #fff;
   font-family: var(--display);
-  font-size: 0.68rem;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.15;
-  padding: 0.45rem;
-  border-radius: 1.2rem;
+  padding: 0.4rem;
+  border-radius: 0.95rem;
   box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.45);
   animation: hover-bob 2.8s ease-in-out infinite;
@@ -1217,11 +1217,11 @@ select {
   }
 
   .book-bubble {
-    width: 5.15rem;
-    height: 5.15rem;
-    font-size: 0.58rem;
-    border-radius: 1.05rem;
-    right: max(0.7rem, env(safe-area-inset-right));
+    width: 3.85rem;
+    height: 3.85rem;
+    font-size: 0.5rem;
+    border-radius: 0.85rem;
+    left: max(0.7rem, env(safe-area-inset-left));
     bottom: max(0.85rem, env(safe-area-inset-bottom));
   }
 
