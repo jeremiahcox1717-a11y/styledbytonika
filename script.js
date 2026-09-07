@@ -145,7 +145,7 @@ if (dateInput && timeSelect && form) {
     return { day, timeLabel, start };
   }
 
-  function showBooked({ name, service, day, timeLabel, where, reminderLine }) {
+  function showBooked({ name, service, day, timeLabel, where, reminderLine, sendNote }) {
     successCopy.replaceChildren();
     const line = (cls, text) => {
       const p = document.createElement("p");
@@ -158,7 +158,32 @@ if (dateInput && timeSelect && form) {
     line("booked-service", service);
     if (where) line("booked-where", where);
     if (reminderLine) line("booked-reminder", reminderLine);
+    if (sendNote) line("booked-send-note", sendNote);
     modal.hidden = false;
+  }
+
+  function bookingEmailBody(data, day, timeLabel, where) {
+    return [
+      "New Styled by Tonika booking",
+      "",
+      `Name: ${data.name}`,
+      `Phone: ${data.phone}`,
+      `Email: ${data.email}`,
+      `Service: ${data.service}`,
+      `When: ${day} at ${timeLabel}`,
+      `Address: ${where || "(none)"}`,
+      `Notes: ${data.notes || "(none)"}`,
+    ].join("\n");
+  }
+
+  function openMailto(inbox, subject, body) {
+    const href = `mailto:${inbox}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const a = document.createElement("a");
+    a.href = href;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   async function sendBookingEmail(data, day, timeLabel, where) {
@@ -166,33 +191,34 @@ if (dateInput && timeSelect && form) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
       throw new Error("Bad inbox");
     }
-    const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        service: data.service,
-        date: day,
-        time: timeLabel,
-        address: where,
-        notes: data.notes || "(none)",
-        _subject: `New booking: ${data.service} — ${day} at ${timeLabel}`,
-        _template: "table",
-        _captcha: "false",
-        _replyto: data.email,
-      }),
-    });
-    const out = await res.json().catch(() => ({}));
-    const msg = String(out.message || "").toLowerCase();
-    if (/confirm|activat|verify/.test(msg)) return;
-    if (!res.ok || String(out.success) === "false") {
-      throw new Error(out.message || "Could not send booking");
+    const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
+    const body = bookingEmailBody(data, day, timeLabel, where);
+    const fd = new FormData();
+    fd.append("name", data.name);
+    fd.append("phone", data.phone);
+    fd.append("email", data.email);
+    fd.append("service", data.service);
+    fd.append("date", day);
+    fd.append("time", timeLabel);
+    fd.append("address", where);
+    fd.append("notes", data.notes || "(none)");
+    fd.append("_subject", subject);
+    fd.append("_template", "table");
+    fd.append("_replyto", data.email);
+
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: fd,
+      });
+      const out = await res.json().catch(() => ({}));
+      if (String(out.success) === "true") return { inbox, subject, body, via: "formsubmit" };
+    } catch {
+      /* fall through to mailto */
     }
+    openMailto(inbox, subject, body);
+    return { inbox, subject, body, via: "mailto" };
   }
 
   form.addEventListener("submit", async (event) => {
@@ -224,8 +250,9 @@ if (dateInput && timeSelect && form) {
       submitBtn.textContent = "Sending…";
     }
 
+    let sent;
     try {
-      await sendBookingEmail(data, day, timeLabel, where);
+      sent = await sendBookingEmail(data, day, timeLabel, where);
     } catch {
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
@@ -273,7 +300,11 @@ if (dateInput && timeSelect && form) {
       }
     }
 
-    showBooked({ name: data.name, service: data.service, day, timeLabel, where, reminderLine });
+    const sendNote =
+      sent?.via === "mailto"
+        ? "An email to Tonika should have opened. Tap Send if you see it — that’s how this request reaches her inbox."
+        : "";
+    showBooked({ name: data.name, service: data.service, day, timeLabel, where, reminderLine, sendNote });
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = "Request Appointment";

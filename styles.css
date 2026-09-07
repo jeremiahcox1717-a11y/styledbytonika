@@ -1088,7 +1088,10 @@ select {
   margin-bottom: 0;
 }
 
-.booked-recap .booked-when {
+.booked-recap .booked-send-note {
+  color: #f0c9d6;
+  font-style: italic;
+}
   font-size: 1.38rem;
   font-weight: 600;
   color: #fff;
