@@ -70,6 +70,68 @@ ul {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.home-canva .site-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.35), transparent);
+  border-bottom: 0;
+}
+
+.canva-page {
+  position: relative;
+  width: 100%;
+  max-width: 2000px;
+  margin: 0 auto;
+  background: #000;
+}
+
+.canva-page > img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hotspot {
+  position: absolute;
+  z-index: 6;
+}
+
+.hotspot-phone {
+  top: 29.4%;
+  left: 52%;
+  width: 45%;
+  height: 2.6%;
+}
+
+.hotspot-email {
+  top: 32%;
+  left: 52%;
+  width: 45%;
+  height: 2.6%;
+}
+
+.hotspot-ig {
+  top: 34.6%;
+  left: 52%;
+  width: 45%;
+  height: 2.6%;
+}
+
+.hotspot-ig-tag {
+  top: 81%;
+  left: 56%;
+  width: 40%;
+  height: 6%;
+}
+
+.hotspot-book {
+  top: 97%;
+  left: 39.4%;
+  width: 58.4%;
+  height: 1.25%;
+}
+
 .site-logo {
   font-size: 1.65rem;
 }
