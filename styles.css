@@ -84,11 +84,11 @@ ul {
 }
 
 .hero-photos img:first-child {
-  object-position: 18% 58%;
+  object-position: 8% 70%;
 }
 
 .hero-photos img:last-child {
-  object-position: 82% 42%;
+  object-position: 92% 40%;
 }
 
 .hero-veil {
@@ -240,8 +240,8 @@ a {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 48% 32%;
-  transform: scale(1.58);
+  object-position: 46% 26%;
+  transform: scale(1.38);
   filter: none;
   border: 0;
   box-shadow: none;
@@ -305,7 +305,8 @@ a {
   max-width: none;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.7) contrast(1.14) saturate(1.02);
+  transform: scale(1.22);
+  filter: brightness(0.72) contrast(1.16) saturate(1.04);
 }
 
 .hours-bg img + img {
@@ -828,6 +829,7 @@ select {
   position: absolute;
   inset: 0;
   z-index: -2;
+  overflow: hidden;
 }
 
 .selfies-bg img {
@@ -835,7 +837,8 @@ select {
   height: 100%;
   max-width: none;
   object-fit: cover;
-  filter: brightness(0.32) contrast(1.08) saturate(0.85);
+  transform: scale(1.18);
+  filter: brightness(0.3) contrast(1.1) saturate(0.85);
 }
 
 .selfies-inner {
