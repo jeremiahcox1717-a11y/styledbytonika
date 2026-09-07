@@ -781,14 +781,14 @@ a {
   line-height: 1.55;
 }
 
-.field-row-city {
-  grid-template-columns: 1.4fr 0.7fr 0.85fr;
-}
-
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.1rem;
+}
+
+.field-row-city {
+  grid-template-columns: 1.4fr 0.7fr 0.85fr;
 }
 
 .field label,
