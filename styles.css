@@ -16,12 +16,19 @@
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--black);
   color: #fff;
   font-family: var(--body);
   font-size: 1.125rem;
   line-height: 1.7;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 img {
@@ -74,14 +81,16 @@ ul {
   position: fixed;
   left: 0;
   right: 0;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.35), transparent);
   border-bottom: 0;
 }
 
 .canva-page {
   position: relative;
-  width: 100%;
-  max-width: 2000px;
+  width: 97.5%;
+  max-width: 1940px;
   margin: 0 auto;
   background: #000;
 }
@@ -139,6 +148,8 @@ ul {
 .nav-ig {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 44px;
   gap: 0.45rem;
   flex-shrink: 0;
   font-family: var(--display);
@@ -168,8 +179,8 @@ ul {
   right: max(1.15rem, env(safe-area-inset-right));
   bottom: max(1.15rem, env(safe-area-inset-bottom));
   z-index: 40;
-  width: 4.6rem;
-  height: 4.6rem;
+  width: 4.35rem;
+  height: 4.35rem;
   display: grid;
   place-items: center;
   text-align: center;
@@ -745,9 +756,10 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.38);
   color: #fff;
   font-family: var(--body);
-  font-size: 1.1rem;
+  font-size: 16px;
   padding: 0.75rem 0.85rem;
   outline: none;
+  border-radius: 0;
 }
 
 input:focus,
@@ -1130,5 +1142,65 @@ select {
 
   .nav-ig {
     padding: 0.65rem 0.75rem;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .canva-page {
+    width: 100%;
+    padding-left: max(0.35rem, env(safe-area-inset-left));
+    padding-right: max(0.35rem, env(safe-area-inset-right));
+  }
+
+  .home-canva .site-nav {
+    padding-top: max(0.45rem, env(safe-area-inset-top));
+    padding-bottom: 1.1rem;
+  }
+
+  .site-logo,
+  .book-logo {
+    font-size: 1.28rem;
+  }
+
+  .book-top {
+    padding: max(0.65rem, env(safe-area-inset-top)) max(0.8rem, env(safe-area-inset-right)) 0.75rem max(0.8rem, env(safe-area-inset-left));
+    gap: 0.6rem;
+  }
+
+  .book-top-actions {
+    gap: 0.55rem;
+  }
+
+  .book {
+    padding: 1.1rem 1.05rem 5.5rem;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .book-bubble {
+    width: 3.9rem;
+    height: 3.9rem;
+    font-size: 0.55rem;
+    right: max(0.7rem, env(safe-area-inset-right));
+    bottom: max(0.85rem, env(safe-area-inset-bottom));
+  }
+
+  .hotspot-phone,
+  .hotspot-email,
+  .hotspot-ig {
+    height: 3.6%;
+  }
+
+  .hotspot-book {
+    height: 2.4%;
+    top: 96.4%;
+  }
+
+  .submit {
+    min-height: 48px;
+    width: 100%;
   }
 }
