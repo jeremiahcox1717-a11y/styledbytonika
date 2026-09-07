@@ -19,7 +19,11 @@ async function loadSiteContent() {
       return local.length === 10 ? `tel:+1${local}` : `tel:${digits}`;
     };
     const igHref = (handle) => {
-      const user = String(handle).replace(/^@/, "").trim();
+      const raw = String(handle).trim();
+      if (/^https?:\/\//i.test(raw)) {
+        return raw.endsWith("/") ? raw : `${raw}/`;
+      }
+      const user = raw.replace(/^@/, "").trim();
       return `https://www.instagram.com/${user.toLowerCase()}/`;
     };
 

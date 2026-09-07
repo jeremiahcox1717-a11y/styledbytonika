@@ -104,27 +104,33 @@ ul {
 .hotspot {
   position: absolute;
   z-index: 6;
+  cursor: pointer;
+}
+
+.hotspot:focus-visible {
+  outline: 2px solid rgba(255, 78, 200, 0.85);
+  outline-offset: 3px;
 }
 
 .hotspot-phone {
-  top: 29.4%;
-  left: 52%;
-  width: 45%;
-  height: 2.6%;
+  top: 28.35%;
+  left: 57.2%;
+  width: 35%;
+  height: 1.4%;
 }
 
 .hotspot-email {
-  top: 32%;
-  left: 52%;
-  width: 45%;
-  height: 2.6%;
+  top: 29.55%;
+  left: 57.2%;
+  width: 35%;
+  height: 1.35%;
 }
 
 .hotspot-ig {
-  top: 34.6%;
-  left: 52%;
-  width: 45%;
-  height: 2.6%;
+  top: 30.7%;
+  left: 57.2%;
+  width: 35%;
+  height: 1.45%;
 }
 
 .hotspot-ig-tag {
@@ -1260,12 +1266,6 @@ select {
     border-radius: 1rem;
     top: max(0.7rem, env(safe-area-inset-top));
     right: max(0.7rem, env(safe-area-inset-right));
-  }
-
-  .hotspot-phone,
-  .hotspot-email,
-  .hotspot-ig {
-    height: 3.6%;
   }
 
   .hotspot-book {
