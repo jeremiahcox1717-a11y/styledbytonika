@@ -13,24 +13,12 @@ WHITE = (255, 255, 255)
 
 def draw_phone(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: int) -> None:
     draw.rounded_rectangle(
-        [cx - s * 0.78, cy - s * 0.30, cx - s * 0.18, cy + s * 0.30],
-        radius=int(s * 0.30),
+        [cx - s * 0.46, cy - s * 0.74, cx + s * 0.46, cy + s * 0.74],
+        radius=int(s * 0.16),
         fill=PINK,
     )
-    draw.rounded_rectangle(
-        [cx + s * 0.18, cy - s * 0.30, cx + s * 0.78, cy + s * 0.30],
-        radius=int(s * 0.30),
-        fill=PINK,
-    )
-    draw.polygon(
-        [
-            (cx - s * 0.32, cy - s * 0.16),
-            (cx + s * 0.32, cy - s * 0.16),
-            (cx + s * 0.24, cy + s * 0.18),
-            (cx - s * 0.24, cy + s * 0.18),
-        ],
-        fill=PINK,
-    )
+    draw.rectangle([cx - s * 0.30, cy - s * 0.54, cx + s * 0.30, cy + s * 0.38], fill=WHITE)
+    draw.ellipse([cx - s * 0.08, cy + s * 0.50, cx + s * 0.08, cy + s * 0.66], fill=WHITE)
 
 
 def draw_mail(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: int) -> None:
@@ -77,12 +65,15 @@ def draw_instagram(draw: ImageDraw.ImageDraw, cx: int, cy: int, s: int) -> None:
 def main() -> None:
     im = Image.open(BANNER).convert("RGB").crop((0, 2000, 2000, 3000))
     draw = ImageDraw.Draw(im)
-    circles = [(1215, 324, 26), (1214, 414, 26), (1214, 496, 26)]
+    circles = [(1204, 324, 32), (1203, 414, 32), (1203, 496, 32)]
     painters = [draw_phone, draw_mail, draw_instagram]
+    overlay = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
     for (cx, cy, rad), paint in zip(circles, painters):
-        draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=WHITE)
-        paint(draw, cx, cy, 18)
-    im.save(OUT, "JPEG", quality=90, optimize=True, progressive=True)
+        draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=(*WHITE, 255))
+        paint(draw, cx, cy, 20)
+    im = Image.alpha_composite(im.convert("RGBA"), overlay).convert("RGB")
+    im.save(OUT, "JPEG", quality=92, optimize=True, progressive=True)
     PREVIEW.mkdir(parents=True, exist_ok=True)
     im.crop((1175, 290, 1600, 540)).save(PREVIEW / "icons-fixed.jpg", quality=95)
     print("saved", OUT)
