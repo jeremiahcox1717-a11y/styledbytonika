@@ -37,6 +37,7 @@ function unlock() {
   sessionStorage.setItem(SESSION_KEY, "1");
   gate.hidden = true;
   studio.hidden = false;
+  document.body.classList.add("owner-unlocked");
   geminiInput.value = sessionStorage.getItem(GEMINI_KEY) || "";
   githubInput.value = sessionStorage.getItem(GITHUB_KEY) || "";
   addBot("You're in. Tell me what to change on the booking site, then hit Publish to live site.");
@@ -47,6 +48,7 @@ function lock() {
   sessionStorage.removeItem(SESSION_KEY);
   studio.hidden = true;
   gate.hidden = false;
+  document.body.classList.remove("owner-unlocked");
   passInput.value = "";
 }
 
@@ -225,28 +227,32 @@ gateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   gateError.hidden = true;
   const value = passInput.value;
-  if (setupMode) {
-    if (value.length < 8) {
-      showGateError("Use at least 8 characters.");
-      return;
-    }
-    if (value !== pass2.value) {
-      showGateError("Those passwords do not match.");
+  try {
+    if (setupMode) {
+      if (value.length < 8) {
+        showGateError("Use at least 8 characters.");
+        return;
+      }
+      if (value !== pass2.value) {
+        showGateError("Those passwords do not match.");
+        return;
+      }
+      const hash = await sha256(value);
+      localStorage.setItem(HASH_KEY, hash);
+      setupMode = false;
+      unlock();
+      addBot("Password saved on this device. Add a GitHub token and publish if you also want this lock on your phone later.");
       return;
     }
     const hash = await sha256(value);
-    localStorage.setItem(HASH_KEY, hash);
-    setupMode = false;
+    if (hash !== storedHash()) {
+      showGateError("Wrong password.");
+      return;
+    }
     unlock();
-    addBot("Password saved on this device. Add a GitHub token and publish if you also want this lock on your phone later.");
-    return;
+  } catch (err) {
+    showGateError("Could not unlock. Try again, or use 8 or more characters.");
   }
-  const hash = await sha256(value);
-  if (hash !== storedHash()) {
-    showGateError("Wrong password.");
-    return;
-  }
-  unlock();
 });
 
 document.querySelector("#lock-btn").addEventListener("click", lock);
