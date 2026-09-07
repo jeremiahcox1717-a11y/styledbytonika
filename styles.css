@@ -968,6 +968,10 @@ select {
   height: 1.1rem;
   margin-top: 0.2rem;
   accent-color: var(--neon);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 .form-error {
@@ -1030,6 +1034,10 @@ select {
   padding: 2.5rem 1.7rem 2rem;
   border: 1px solid rgba(255, 78, 200, 0.4);
   box-shadow: 0 0 48px rgba(255, 78, 200, 0.16);
+}
+
+.booked-card p {
+  margin-bottom: 0;
 }
 
 .booked-check {

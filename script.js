@@ -120,6 +120,52 @@ if (dateInput && timeSelect && form) {
     return { day, timeLabel, start };
   }
 
+  function showBooked({ name, service, day, timeLabel, where, reminderLine }) {
+    successCopy.replaceChildren();
+    const line = (cls, text) => {
+      const p = document.createElement("p");
+      if (cls) p.className = cls;
+      p.textContent = text;
+      successCopy.appendChild(p);
+    };
+    line("booked-hello", `You’re booked, ${name}.`);
+    line("booked-when", `${day} at ${timeLabel}`);
+    line("booked-service", service);
+    if (where) line("booked-where", where);
+    if (reminderLine) line("booked-reminder", reminderLine);
+    modal.hidden = false;
+  }
+
+  async function sendBookingEmail(data, day, timeLabel, where) {
+    const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
+    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(inbox)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        service: data.service,
+        date: day,
+        time: timeLabel,
+        address: where,
+        notes: data.notes || "(none)",
+        _subject: `New booking: ${data.service} — ${day} at ${timeLabel}`,
+        _template: "table",
+        _captcha: "false",
+        _replyto: data.email,
+        _honey: "",
+      }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || String(out.success) === "false") {
+      throw new Error(out.message || "Could not send booking");
+    }
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     formError.hidden = true;
@@ -144,13 +190,26 @@ if (dateInput && timeSelect && form) {
     const remindOn = data["sms-reminder"] === "on";
     let reminderLine = "";
 
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending…";
+    }
+
+    try {
+      await sendBookingEmail(data, day, timeLabel, where);
+    } catch {
+      formError.hidden = false;
+      formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Request Appointment";
+      }
+      return;
+    }
+
     if (remindOn) {
       const webhook = String(window.__SITE__?.smsWebhook || "").trim();
       if (webhook) {
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = "Sending…";
-        }
         try {
           const res = await fetch(webhook, {
             method: "POST",
@@ -170,14 +229,10 @@ if (dateInput && timeSelect && form) {
               minute: "2-digit",
               timeZone: TZ,
             });
-            reminderLine = ` You’ll get a text reminder ${hours} hours before (${around}) with the day and time.`;
+            reminderLine = `Text reminder ${hours} hours before (${around}).`;
           }
         } catch {
-          /* booking still goes through */
-        }
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Request Appointment";
+          /* email already went through */
         }
       } else {
         const around = new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
@@ -185,12 +240,15 @@ if (dateInput && timeSelect && form) {
           minute: "2-digit",
           timeZone: TZ,
         });
-        reminderLine = ` You’ll get a text reminder ${hours} hours before (${around}) with the day and time.`;
+        reminderLine = `Text reminder ${hours} hours before (${around}).`;
       }
     }
 
-    successCopy.textContent = `Thank you, ${data.name}. Your ${data.service.toLowerCase()} request for ${day} at ${timeLabel} is in${where ? ` at ${where}` : ""}. I’ll confirm shortly by text or email.${reminderLine}`;
-    modal.hidden = false;
+    showBooked({ name: data.name, service: data.service, day, timeLabel, where, reminderLine });
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Request Appointment";
+    }
     form.reset();
     const remindBox = document.querySelector("#sms-reminder");
     if (remindBox) remindBox.checked = true;
