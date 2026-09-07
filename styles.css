@@ -749,17 +749,6 @@ a {
   color: #fff;
 }
 
-.book-logo {
-  font-size: 1.7rem;
-}
-
-.book-back {
-  font-family: var(--display);
-  font-size: 0.68rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .book-back:hover {
   color: var(--neon);
 }

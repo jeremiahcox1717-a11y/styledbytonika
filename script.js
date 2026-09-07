@@ -6,7 +6,6 @@ const modal = document.querySelector("#success-modal");
 const successCopy = document.querySelector("#success-copy");
 
 if (dateInput && timeSelect && form) {
-  const today = new Date();
   const iso = (d) => {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");

@@ -10,7 +10,7 @@
  *
  * Then paste the worker URL into content.json as smsWebhook and Publish.
  */
-const TZ = "America/New_York";
+const TZ = "America/Vancouver";
 const ALLOWED = new Set([
   "https://styledbytonika.ca",
   "https://www.styledbytonika.ca",
