@@ -4,6 +4,8 @@ async function loadSiteContent() {
     if (!res.ok) return;
     const c = await res.json();
     window.__SITE__ = c;
+    const dateInput = document.querySelector("#date");
+    if (dateInput?.value) dateInput.dispatchEvent(new Event("change"));
 
     const text = (sel, value) => {
       document.querySelectorAll(sel).forEach((el) => {
