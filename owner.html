@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=45" />
-  <link rel="stylesheet" href="owner.css?v=2" />
+  <link rel="stylesheet" href="owner.css?v=3" />
 </head>
 <body class="owner-page">
   <div id="gate" class="owner-gate">
@@ -45,6 +45,29 @@
     </section>
 
     <section class="owner-keys">
+      <details open>
+        <summary>Password</summary>
+        <p class="owner-hint">Change the password that opens this studio. Use at least 8 characters.</p>
+        <form id="password-form">
+          <label>
+            Current password
+            <input id="pass-current" type="password" autocomplete="current-password" required />
+          </label>
+          <label>
+            New password
+            <input id="pass-new" type="password" autocomplete="new-password" required />
+          </label>
+          <label>
+            Confirm new password
+            <input id="pass-new-2" type="password" autocomplete="new-password" required />
+          </label>
+          <button class="submit" type="submit" id="save-pass-btn">Save password</button>
+          <p id="pass-status" class="owner-status"></p>
+        </form>
+      </details>
+    </section>
+
+    <section class="owner-keys">
       <details>
         <summary>Keys (kept in this browser only)</summary>
         <p class="owner-hint">Paste these once per visit. They are not saved on the public website.</p>
@@ -75,6 +98,6 @@
   </div>
 
   <script src="owner-config.js"></script>
-  <script src="owner.js?v=2"></script>
+  <script src="owner.js?v=3"></script>
 </body>
 </html>

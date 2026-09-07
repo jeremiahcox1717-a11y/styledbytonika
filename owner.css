@@ -128,6 +128,15 @@
   margin-top: 0.9rem;
 }
 
+.owner-keys .submit {
+  margin-top: 1.1rem;
+  width: 100%;
+}
+
+.owner-keys + .owner-keys {
+  padding-top: 1rem;
+}
+
 .owner-keys a {
   color: var(--neon);
 }

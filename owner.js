@@ -19,6 +19,11 @@ const publishBtn = document.querySelector("#publish-btn");
 const publishStatus = document.querySelector("#publish-status");
 const geminiInput = document.querySelector("#gemini-key");
 const githubInput = document.querySelector("#github-token");
+const passwordForm = document.querySelector("#password-form");
+const passCurrent = document.querySelector("#pass-current");
+const passNew = document.querySelector("#pass-new");
+const passNew2 = document.querySelector("#pass-new-2");
+const passStatus = document.querySelector("#pass-status");
 
 let siteContent = null;
 let setupMode = false;
@@ -30,7 +35,12 @@ async function sha256(text) {
 }
 
 function storedHash() {
-  return (window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash) || localStorage.getItem(HASH_KEY) || "";
+  return localStorage.getItem(HASH_KEY) || (window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash) || "";
+}
+
+function saveHash(hash) {
+  localStorage.setItem(HASH_KEY, hash);
+  if (window.OWNER_CONFIG) window.OWNER_CONFIG.passwordHash = hash;
 }
 
 function unlock() {
@@ -50,6 +60,12 @@ function lock() {
   gate.hidden = false;
   document.body.classList.remove("owner-unlocked");
   passInput.value = "";
+  pass2.value = "";
+  passConfirmWrap.hidden = true;
+  pass2.required = false;
+  gateSubmit.textContent = "Unlock";
+  gateCopy.textContent = "Enter your owner password to open the studio and talk to the site bot.";
+  gateError.hidden = true;
 }
 
 function showGateError(msg) {
@@ -238,7 +254,7 @@ gateForm.addEventListener("submit", async (event) => {
         return;
       }
       const hash = await sha256(value);
-      localStorage.setItem(HASH_KEY, hash);
+      saveHash(hash);
       setupMode = false;
       unlock();
       addBot("Password saved on this device. Add a GitHub token and publish if you also want this lock on your phone later.");
@@ -256,6 +272,35 @@ gateForm.addEventListener("submit", async (event) => {
 });
 
 document.querySelector("#lock-btn").addEventListener("click", lock);
+
+passwordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  passStatus.textContent = "";
+  const current = passCurrent.value;
+  const next = passNew.value;
+  const confirm = passNew2.value;
+  try {
+    if (next.length < 8) {
+      passStatus.textContent = "Use at least 8 characters.";
+      return;
+    }
+    if (next !== confirm) {
+      passStatus.textContent = "Those new passwords do not match.";
+      return;
+    }
+    if ((await sha256(current)) !== storedHash()) {
+      passStatus.textContent = "Current password is wrong.";
+      return;
+    }
+    saveHash(await sha256(next));
+    passCurrent.value = "";
+    passNew.value = "";
+    passNew2.value = "";
+    passStatus.textContent = "Password saved on this device. Click Publish to live site if you also want this lock on your phone.";
+  } catch (err) {
+    passStatus.textContent = "Could not save the password. Try again.";
+  }
+});
 
 geminiInput.addEventListener("change", () => {
   sessionStorage.setItem(GEMINI_KEY, geminiInput.value.trim());
@@ -305,8 +350,8 @@ publishBtn.addEventListener("click", async () => {
   publishStatus.textContent = "Publishing…";
   try {
     await githubPut("content.json", `${JSON.stringify(siteContent, null, 2)}\n`, "Update site content from owner studio");
-    const hash = localStorage.getItem(HASH_KEY);
-    if (hash && !(window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash)) {
+    const hash = storedHash();
+    if (hash && window.OWNER_CONFIG) {
       const config = `window.OWNER_CONFIG = {\n  githubOwner: "${window.OWNER_CONFIG.githubOwner}",\n  githubRepo: "${window.OWNER_CONFIG.githubRepo}",\n  githubBranch: "${window.OWNER_CONFIG.githubBranch}",\n  passwordHash: "${hash}"\n};\n`;
       await githubPut("owner-config.js", config, "Save owner studio password lock");
     }
