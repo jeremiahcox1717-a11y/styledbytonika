@@ -156,15 +156,13 @@ ul {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #e8a8bc;
-  background: linear-gradient(165deg, rgba(48, 18, 32, 0.58), rgba(8, 6, 8, 0.7));
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  color: #f0c9d6;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px) saturate(1.2);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
   border-radius: 1.15rem;
-  border: 1px solid rgba(232, 150, 176, 0.38);
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 190, 210, 0.18);
+  border: 1px solid rgba(255, 220, 230, 0.22);
+  box-shadow: none;
   animation: hover-bob 4.2s ease-in-out infinite;
 }
 
@@ -197,10 +195,10 @@ ul {
   display: grid;
   place-items: center;
   text-align: center;
-  background: linear-gradient(165deg, rgba(48, 18, 32, 0.58), rgba(8, 6, 8, 0.7));
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  color: #e8a8bc;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px) saturate(1.2);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+  color: #f0c9d6;
   font-family: var(--body);
   font-size: 1.15rem;
   font-weight: 500;
@@ -211,10 +209,8 @@ ul {
   padding: 0.4rem 0.85rem;
   border-radius: 1.15rem;
   white-space: nowrap;
-  border: 1px solid rgba(232, 150, 176, 0.38);
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 190, 210, 0.18);
+  border: 1px solid rgba(255, 220, 230, 0.22);
+  box-shadow: none;
   animation: hover-bob 4.2s ease-in-out infinite;
 }
 
@@ -222,11 +218,10 @@ ul {
 .book-bubble:hover {
   animation: none;
   translate: 0 -0.18rem;
-  color: #f7d4e0;
-  border-color: rgba(255, 170, 196, 0.55);
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 210, 224, 0.28);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 230, 238, 0.38);
+  box-shadow: none;
 }
 
 @keyframes hover-bob {
