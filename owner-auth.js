@@ -10,7 +10,7 @@ async function sha256(text) {
 }
 
 function storedHash() {
-  return localStorage.getItem(HASH_KEY) || (window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash) || "";
+  return (window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash) || localStorage.getItem(HASH_KEY) || "";
 }
 
 function saveHash(hash) {
