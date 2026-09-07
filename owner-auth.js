@@ -26,6 +26,12 @@ function markUnlocked() {
   sessionStorage.setItem(SESSION_KEY, "1");
 }
 
+function takeUnlockTicket() {
+  if (sessionStorage.getItem(SESSION_KEY) !== "1" || !storedHash()) return false;
+  sessionStorage.removeItem(SESSION_KEY);
+  return true;
+}
+
 function lockStudio() {
   sessionStorage.removeItem(SESSION_KEY);
 }

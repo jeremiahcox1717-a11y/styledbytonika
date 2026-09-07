@@ -1,4 +1,4 @@
-if (!isUnlocked()) {
+if (!window.__STUDIO_OK) {
   window.location.replace("owner.html");
 } else {
 initStudio();

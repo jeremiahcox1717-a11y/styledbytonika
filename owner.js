@@ -18,10 +18,6 @@ function goToStudio() {
   window.location.replace("studio.html");
 }
 
-if (isUnlocked()) {
-  window.location.replace("studio.html");
-}
-
 if (!storedHash()) {
   setupMode = true;
   gateCopy.textContent = "Create an owner password. Only people with this password can open the studio.";
