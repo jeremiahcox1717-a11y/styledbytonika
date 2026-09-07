@@ -367,9 +367,37 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
   margin-top: 1rem;
   text-align: left;
+}
+
+.contact-link,
+.ig-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: #fff;
+}
+
+.contact-link:hover,
+.ig-handle:hover {
+  color: var(--neon);
+}
+
+.ig-handle {
+  margin-top: 0.75rem;
+  gap: 0.55rem;
+}
+
+.ig-logo {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+
+.ig-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .icon {

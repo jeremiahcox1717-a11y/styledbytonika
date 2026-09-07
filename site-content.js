@@ -13,6 +13,16 @@ async function loadSiteContent() {
       });
     };
 
+    const phoneHref = (phone) => {
+      const digits = String(phone).replace(/\D/g, "");
+      const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+      return local.length === 10 ? `tel:+1${local}` : `tel:${digits}`;
+    };
+    const igHref = (handle) => {
+      const user = String(handle).replace(/^@/, "").trim();
+      return `https://www.instagram.com/${user}/`;
+    };
+
     text("[data-field='brand']", c.brand);
     text("[data-field='kicker']", c.kicker);
     text("[data-field='owner']", c.owner ? `By ${c.owner}` : null);
@@ -21,13 +31,28 @@ async function loadSiteContent() {
     text("[data-field='email']", c.email);
     text("[data-field='instagram']", c.instagram);
     text("[data-field='hashtag']", c.hashtag ? `Hashtag ${c.hashtag}` : null);
-    text("[data-field='tagline']", c.instagram ? `Tag us ${c.instagram}` : null);
     text("[data-field='book-lede']", c.bookLede);
     text("[data-field='thanks-note']", c.thanksNote);
     text("[data-field='hours-sat-label']", c.hours?.saturday?.label);
     text("[data-field='hours-sat-text']", c.hours?.saturday?.text);
     text("[data-field='hours-sun-label']", c.hours?.sunday?.label);
     text("[data-field='hours-sun-text']", c.hours?.sunday?.text);
+
+    if (c.phone) {
+      document.querySelectorAll("[data-phone-link]").forEach((el) => {
+        el.href = phoneHref(c.phone);
+      });
+    }
+    if (c.email) {
+      document.querySelectorAll("[data-email-link]").forEach((el) => {
+        el.href = `mailto:${c.email}`;
+      });
+    }
+    if (c.instagram) {
+      document.querySelectorAll("[data-ig-link]").forEach((el) => {
+        el.href = igHref(c.instagram);
+      });
+    }
     text("[data-field='policy-deposits']", c.policies?.deposits);
     text("[data-field='policy-traveling']", c.policies?.traveling);
     text("[data-field='policy-delay']", c.policies?.delay);
