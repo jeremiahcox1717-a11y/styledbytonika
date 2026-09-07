@@ -7,11 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="styles.css?v=42" />
 </head>
 <body>
   <header class="site-nav">
-    <a class="site-logo neon" href="index.html">Styled by Tonika</a>
+    <a class="site-logo neon" href="index.html" data-field="brand">Styled by Tonika</a>
     <a class="nav-book" href="book.html">Book</a>
   </header>
 
@@ -22,9 +22,9 @@
     </div>
     <div class="hero-veil"></div>
     <div class="hero-content">
-      <p class="kicker">Welcome to our booking website</p>
-      <h1 class="hero-title">Styled by Tonika</h1>
-      <p class="banner">By Tonika Lord</p>
+      <p class="kicker" data-field="kicker">Welcome to our booking website</p>
+      <h1 class="hero-title" data-field="brand">Styled by Tonika</h1>
+      <p class="banner" data-field="owner">By Tonika Lord</p>
     </div>
   </section>
 
@@ -33,7 +33,7 @@
       <div class="stylist-copy">
         <p class="kicker kicker-left">Meet your</p>
         <h2 class="neon">Stylist</h2>
-        <p class="bio">
+        <p class="bio" data-field="bio">
           Hi, I'm Tonika, a hair stylist passionate about creating modern,
           personalized styles that enhance natural beauty and boost confidence.
           I specialize in working closely with each client to understand their
@@ -63,12 +63,12 @@
         <h2 class="neon">Hours</h2>
         <ul class="hours-list">
           <li>
-            <span>Saturday</span>
-            <span>8:00 AM – 5:00 PM</span>
+            <span data-field="hours-sat-label">Saturday</span>
+            <span data-field="hours-sat-text">8:00 AM – 5:00 PM</span>
           </li>
           <li>
-            <span>Sunday</span>
-            <span>9:00 AM – 3:00 PM</span>
+            <span data-field="hours-sun-label">Sunday</span>
+            <span data-field="hours-sun-text">9:00 AM – 3:00 PM</span>
           </li>
         </ul>
       </article>
@@ -79,19 +79,19 @@
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3c0 1.1-.9 2-2 2C9.4 19.5 4.5 14.6 4.5 5.5c0-1.1.9-2 2-2Z"/></svg>
             </span>
-            (252) 515-0118
+            <span data-field="phone">(252) 515-0118</span>
           </li>
           <li>
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
             </span>
-            STYLEDBYTONIKA@GMAIL.COM
+            <span data-field="email">STYLEDBYTONIKA@GMAIL.COM</span>
           </li>
           <li>
             <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg>
             </span>
-            @STYLED-BY-TONIKA
+            <span data-field="instagram">@STYLED-BY-TONIKA</span>
           </li>
         </ul>
       </article>
@@ -111,7 +111,7 @@
           </svg>
         </div>
         <h3>Deposits</h3>
-        <p>
+        <p data-field="policy-deposits">
           A non-refundable $25 deposit is required to secure your appointment.
           This amount will be applied toward your final balance. Remaining
           balance MUST be in Cash only.
@@ -125,7 +125,7 @@
           </svg>
         </div>
         <h3>Traveling</h3>
-        <p>
+        <p data-field="policy-traveling">
           As a mobile service, a travel fee will be added. Rates may vary
           depending on location.
         </p>
@@ -138,7 +138,7 @@
           </svg>
         </div>
         <h3>Delay</h3>
-        <p>
+        <p data-field="policy-delay">
           We allow a 15-minute grace period. After that, a late fee will apply
           or your appointment may need to be rescheduled.
         </p>
@@ -153,7 +153,7 @@
           </svg>
         </div>
         <h3>Reschedule</h3>
-        <p>
+        <p data-field="policy-reschedule">
           Need to reschedule? Please notify us at least 48 hours in advance so
           we can accommodate you and offer your spot to another client.
         </p>
@@ -171,16 +171,16 @@
     <h2 class="neon policies-title">Before your Appt</h2>
     <div class="before-grid">
       <article class="card before-card">
-        <p>Before your appointment, please ensure you're ready to begin at your scheduled time. This allows me to dedicate the full appointment to you, ensuring a smooth, relaxed, and unhurried experience without any unnecessary delays.</p>
+        <p data-field="before-0">Before your appointment, please ensure you're ready to begin at your scheduled time. This allows me to dedicate the full appointment to you, ensuring a smooth, relaxed, and unhurried experience without any unnecessary delays.</p>
       </article>
       <article class="card before-card">
-        <p>Bring any inspiration photos, reference styles, or ideas you love so we can fully understand your vision and personalize your look exactly to your preference.</p>
+        <p data-field="before-1">Bring any inspiration photos, reference styles, or ideas you love so we can fully understand your vision and personalize your look exactly to your preference.</p>
       </article>
       <article class="card before-card">
-        <p>Come with clean, dry hair that is free from heavy styling products, oils, or buildup to help us achieve the best possible results and flawless final finish.</p>
+        <p data-field="before-2">Come with clean, dry hair that is free from heavy styling products, oils, or buildup to help us achieve the best possible results and flawless final finish.</p>
       </article>
       <article class="card before-card">
-        <p>If you need to reschedule or cancel your appointment, please notify us in advance to allow us to manage our schedule efficiently and accommodate other valued clients.</p>
+        <p data-field="before-3">If you need to reschedule or cancel your appointment, please notify us in advance to allow us to manage our schedule efficiently and accommodate other valued clients.</p>
       </article>
     </div>
   </section>
@@ -188,7 +188,7 @@
   <section class="services">
     <div class="services-copy">
       <h2 class="neon">Hair Services</h2>
-      <ul class="service-list">
+      <ul class="service-list" data-field="services">
         <li>Locs</li>
         <li>Mens styles</li>
         <li>Wig Installation</li>
@@ -221,8 +221,8 @@
         <p class="kicker">Tag us in your</p>
         <h2 class="neon">Selfies</h2>
         <div class="tag-box">
-          <p>Hashtag #StyledbyTonika</p>
-          <p>Tag us @Styled-by-Tonika</p>
+          <p data-field="hashtag">Hashtag #StyledbyTonika</p>
+          <p data-field="tagline">Tag us @Styled-by-Tonika</p>
         </div>
       </div>
     </div>
@@ -237,10 +237,11 @@
       <h2 class="neon">Thank You</h2>
       <p class="kicker">For choosing us</p>
       <a class="btn-pink" href="book.html">Book your appointment today!</a>
-      <p class="thanks-note">Pick your service, and get ready to shine!</p>
+      <p class="thanks-note" data-field="thanks-note">Pick your service, and get ready to shine!</p>
     </div>
   </section>
 
-  <script src="script.js?v=4"></script>
+  <script src="site-content.js?v=1"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>

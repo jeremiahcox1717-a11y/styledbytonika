@@ -1,0 +1,182 @@
+.owner-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(255, 78, 200, 0.12), transparent 46%),
+    #000;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.owner-gate {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 2rem 1.4rem 4rem;
+}
+
+.owner-gate h1,
+.owner-hero h1 {
+  font-size: clamp(3.2rem, 8vw, 5.4rem);
+  margin: 0.4rem 0 1rem;
+}
+
+.owner-lede,
+.owner-hero p,
+.owner-hint {
+  font-family: var(--display);
+  color: #d7d7d7;
+  max-width: 34rem;
+  margin: 0 auto 1.4rem;
+  line-height: 1.6;
+}
+
+.owner-gate-form {
+  width: min(100%, 22rem);
+  margin: 0 auto;
+  text-align: left;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.owner-gate-form label,
+.owner-keys label {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.owner-back,
+.owner-top-actions a,
+.owner-top-actions button {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.owner-back {
+  display: inline-block;
+  margin-top: 1.6rem;
+}
+
+.owner-studio {
+  padding-bottom: 4rem;
+}
+
+.owner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 6vw;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.owner-logo {
+  font-size: 1.6rem;
+}
+
+.owner-top-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.owner-lock {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+}
+
+.owner-hero,
+.owner-keys,
+.owner-chat-wrap {
+  width: min(100%, 44rem);
+  margin: 0 auto;
+  padding: 2rem 6vw 0;
+}
+
+.owner-keys details {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 1rem 1.1rem;
+}
+
+.owner-keys summary {
+  font-family: var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.owner-keys label {
+  margin-top: 0.9rem;
+}
+
+.owner-keys a {
+  color: var(--neon);
+}
+
+.owner-chat {
+  min-height: 18rem;
+  max-height: 28rem;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.owner-msg {
+  font-family: var(--display);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  padding: 0.75rem 0.9rem;
+  width: fit-content;
+  max-width: 92%;
+}
+
+.owner-msg.user {
+  justify-self: end;
+  background: var(--neon);
+  color: #000;
+}
+
+.owner-msg.bot {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.owner-compose {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.owner-compose textarea {
+  resize: vertical;
+  min-height: 4.2rem;
+}
+
+.owner-publish-row {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.owner-status {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: #cfcfcf;
+}
