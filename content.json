@@ -1,0 +1,46 @@
+{
+  "brand": "Styled by Tonika",
+  "owner": "Tonika Lord",
+  "kicker": "Welcome to our booking website",
+  "bio": "Hi, I'm Tonika, a hair stylist passionate about creating modern, personalized styles that enhance natural beauty and boost confidence. I specialize in working closely with each client to understand their vision and lifestyle, making sure every style is not only beautiful but also practical and easy to maintain.",
+  "hours": {
+    "saturday": {
+      "label": "Saturday",
+      "text": "8:00 AM – 5:00 PM",
+      "start": 8,
+      "end": 17
+    },
+    "sunday": {
+      "label": "Sunday",
+      "text": "9:00 AM – 3:00 PM",
+      "start": 9,
+      "end": 15
+    }
+  },
+  "phone": "(252) 515-0118",
+  "email": "STYLEDBYTONIKA@GMAIL.COM",
+  "instagram": "@STYLED-BY-TONIKA",
+  "hashtag": "#StyledbyTonika",
+  "policies": {
+    "deposits": "A non-refundable $25 deposit is required to secure your appointment. This amount will be applied toward your final balance. Remaining balance MUST be in Cash only.",
+    "traveling": "As a mobile service, a travel fee will be added. Rates may vary depending on location.",
+    "delay": "We allow a 15-minute grace period. After that, a late fee will apply or your appointment may need to be rescheduled.",
+    "reschedule": "Need to reschedule? Please notify us at least 48 hours in advance so we can accommodate you and offer your spot to another client."
+  },
+  "before": [
+    "Before your appointment, please ensure you're ready to begin at your scheduled time. This allows me to dedicate the full appointment to you, ensuring a smooth, relaxed, and unhurried experience without any unnecessary delays.",
+    "Bring any inspiration photos, reference styles, or ideas you love so we can fully understand your vision and personalize your look exactly to your preference.",
+    "Come with clean, dry hair that is free from heavy styling products, oils, or buildup to help us achieve the best possible results and flawless final finish.",
+    "If you need to reschedule or cancel your appointment, please notify us in advance to allow us to manage our schedule efficiently and accommodate other valued clients."
+  ],
+  "services": [
+    "Locs",
+    "Mens styles",
+    "Wig Installation",
+    "Quick weaves",
+    "Feed in cornrows",
+    ""
+  ],
+  "bookLede": "Pick a service and a time that works. A non-refundable $25 deposit holds your spot and goes toward your balance. Remaining balance is cash only.",
+  "thanksNote": "Pick your service, and get ready to shine!"
+}
