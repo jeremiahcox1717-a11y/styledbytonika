@@ -20,7 +20,7 @@ async function loadSiteContent() {
     };
     const igHref = (handle) => {
       const user = String(handle).replace(/^@/, "").trim();
-      return `https://www.instagram.com/${user}/`;
+      return `https://www.instagram.com/${user.toLowerCase()}/`;
     };
 
     text("[data-field='brand']", c.brand);
