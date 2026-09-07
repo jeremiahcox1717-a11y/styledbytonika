@@ -36,9 +36,10 @@ w, h = p1.size
 w2, h2 = p2.size
 print("p1", w, h, "p2", w2, h2)
 
-# Hero: BATHING / looking-down band only (y 94–128). Title lives above this.
-save(p1.crop((0, 94, int(w * 0.26), 126)), "hero-locs-left.jpg", (720, 1080))
-save(p1.crop((int(w * 0.76), 94, w, 126)), "hero-locs-right.jpg", (720, 1080))
+# Full hero band; CSS darkens the center so baked title stays hidden.
+save(p1.crop((0, 0, w, 135)), "hero-from-canva.jpg", (1600, 980))
+save(p1.crop((0, 102, int(w * 0.20), 126)), "hero-locs-left.jpg", (720, 1080))
+save(p1.crop((int(w * 0.82), 102, w, 126)), "hero-locs-right.jpg", (720, 1080))
 
 # Portrait: full face inside the Canva ring.
 save(p1.crop((int(w * 0.738), 158, int(w * 0.882), 220)), "stylist-portrait.jpg", (720, 720))
