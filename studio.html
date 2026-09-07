@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Owner Studio | Styled by Tonika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=46" />
+  <link rel="stylesheet" href="owner.css?v=4" />
+</head>
+<body class="owner-page owner-unlocked">
+  <div class="owner-studio">
+    <header class="owner-top">
+      <a class="neon owner-logo" href="index.html">Styled by Tonika</a>
+      <div class="owner-top-actions">
+        <a href="index.html" target="_blank" rel="noopener">View site</a>
+        <button type="button" id="lock-btn" class="owner-lock">Lock</button>
+      </div>
+    </header>
+
+    <section class="owner-hero">
+      <p class="kicker">Owner studio</p>
+      <h1 class="neon">Site bot</h1>
+      <p>Tell it what to change. Example: “Saturday hours 9 to 5” or “add knotless braids to services.”</p>
+    </section>
+
+    <section class="owner-keys">
+      <details open>
+        <summary>Password</summary>
+        <p class="owner-hint">Change the password that opens this studio. Use at least 8 characters.</p>
+        <form id="password-form">
+          <label>
+            Current password
+            <input id="pass-current" type="password" autocomplete="current-password" required />
+          </label>
+          <label>
+            New password
+            <input id="pass-new" type="password" autocomplete="new-password" required />
+          </label>
+          <label>
+            Confirm new password
+            <input id="pass-new-2" type="password" autocomplete="new-password" required />
+          </label>
+          <button class="submit" type="submit" id="save-pass-btn">Save password</button>
+          <p id="pass-status" class="owner-status"></p>
+        </form>
+      </details>
+    </section>
+
+    <section class="owner-keys">
+      <details>
+        <summary>Keys (kept in this browser only)</summary>
+        <p class="owner-hint">Paste these once per visit. They are not saved on the public website.</p>
+        <label>
+          Gemini API key
+          <input id="gemini-key" type="password" autocomplete="off" placeholder="Starts with AIza…" />
+        </label>
+        <label>
+          GitHub token (repo scope)
+          <input id="github-token" type="password" autocomplete="off" placeholder="ghp_…" />
+        </label>
+        <p class="owner-hint">Gemini key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. GitHub token: Settings → Developer settings → Personal access tokens, with access to this repo. After you click Publish, the live site updates in about a minute.</p>
+      </details>
+    </section>
+
+    <section class="owner-chat-wrap">
+      <div id="chat-log" class="owner-chat" aria-live="polite"></div>
+      <form id="chat-form" class="owner-compose">
+        <label class="sr-only" for="chat-input">Message the bot</label>
+        <textarea id="chat-input" rows="2" required placeholder="What should we change?"></textarea>
+        <button class="submit" type="submit">Send</button>
+      </form>
+      <div class="owner-publish-row">
+        <button type="button" id="publish-btn" class="btn-pink">Publish to live site</button>
+        <p id="publish-status" class="owner-status"></p>
+      </div>
+    </section>
+  </div>
+
+  <script src="owner-config.js"></script>
+  <script src="owner-auth.js?v=1"></script>
+  <script src="studio.js?v=1"></script>
+</body>
+</html>
