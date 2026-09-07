@@ -6,19 +6,19 @@
   "hours": {
     "saturday": {
       "label": "Saturday",
-      "text": "8:00 AM – 5:00 PM",
-      "start": 8,
+      "text": "9:00 AM – 5:00 PM",
+      "start": 9,
       "end": 17
     },
     "sunday": {
       "label": "Sunday",
-      "text": "9:00 AM – 3:00 PM",
+      "text": "9:00 AM – 5:00 PM",
       "start": 9,
-      "end": 15
+      "end": 17
     }
   },
   "phone": "(252) 515-0118",
-  "email": "STYLEDBYTONIKA@GMAIL.COM",
+  "email": "styledbytonika@gmail.com",
   "instagram": "@styled_by_tonika",
   "hashtag": "#StyledbyTonika",
   "policies": {

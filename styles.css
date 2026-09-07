@@ -723,6 +723,8 @@ a {
 
 .book-page {
   min-height: 100vh;
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(ellipse at top, rgba(255, 78, 200, 0.1), transparent 50%),
     #000;
@@ -757,13 +759,39 @@ a {
 
 .book h1 {
   font-size: clamp(3.4rem, 8vw, 5.8rem);
-  margin: 0.35rem 0 1rem;
+  margin: 0.35rem 0 0.7rem;
+}
+
+.book-hours {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.85rem;
+  margin: 0 auto 1.35rem;
+  max-width: 36rem;
+  color: #f0c9d6;
+  font-size: 1.12rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.book-hours strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+.book-hours-dot {
+  color: rgba(255, 78, 200, 0.7);
 }
 
 .book-lede {
   max-width: 36rem;
   margin: 0 auto 2.4rem;
-  color: #d8d8d8;
+  color: #efe8eb;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.75;
 }
 
 .book-form {
@@ -787,9 +815,9 @@ a {
 
 .address-note {
   margin: 0;
-  color: #d8d8d8;
-  font-size: 1.02rem;
-  line-height: 1.55;
+  color: #efe8eb;
+  font-size: 1.08rem;
+  line-height: 1.6;
 }
 
 .field-row {
@@ -800,6 +828,17 @@ a {
 
 .field-row-city {
   grid-template-columns: 1.4fr 0.7fr 0.85fr;
+}
+
+.book-page .field label {
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f0c9d6;
+  display: block;
+  margin-bottom: 0.45rem;
 }
 
 .field label,
@@ -823,21 +862,89 @@ input,
 select,
 textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.07);
+  background: #111;
   border: 1px solid rgba(255, 255, 255, 0.38);
   color: #fff;
+  caret-color: #fff;
+  color-scheme: dark;
   font-family: var(--body);
-  font-size: 16px;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
   padding: 0.75rem 0.85rem;
   outline: none;
   border-radius: 0;
 }
 
+.book-page input:not([type="checkbox"]),
+.book-page select,
+.book-page textarea {
+  background: #111;
+  color: #fff;
+}
+
 input:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+.book-page input:not([type="checkbox"]):focus,
+.book-page select:focus,
+.book-page textarea:focus {
+  background: #111;
+  color: #fff;
   border-color: var(--neon);
   box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
+}
+
+.book-page input::placeholder,
+.book-page textarea::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.book-page input:-webkit-autofill,
+.book-page input:-webkit-autofill:hover,
+.book-page input:-webkit-autofill:focus,
+.book-page textarea:-webkit-autofill,
+.book-page textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  box-shadow: 0 0 0 1000px #111 inset;
+  transition: background-color 99999s ease-out;
+}
+
+.book-page input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.book-page input::-webkit-datetime-edit,
+.book-page input::-webkit-datetime-edit-fields-wrapper,
+.book-page input::-webkit-datetime-edit-text,
+.book-page input::-webkit-datetime-edit-month-field,
+.book-page input::-webkit-datetime-edit-day-field,
+.book-page input::-webkit-datetime-edit-year-field {
+  color: #fff;
+}
+
+.book-page select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #111;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='%23f0c9d6' d='M1 1l5 5 5-5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 0.75rem;
+  padding-right: 2.4rem;
+}
+
+.book-page option,
+.book-page optgroup {
+  background: #111;
+  color: #fff;
+}
+
+.book-page ::selection {
+  background: rgba(255, 78, 200, 0.45);
+  color: #fff;
 }
 
 select {
@@ -852,7 +959,8 @@ select {
   text-transform: none;
   letter-spacing: 0.02em;
   font-family: var(--body);
-  font-size: 1rem;
+  font-size: 1.05rem;
+  color: #ece6e8;
 }
 
 .check input {
@@ -889,7 +997,7 @@ select {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.82);
   display: grid;
   place-items: center;
   z-index: 80;
@@ -915,6 +1023,67 @@ select {
 
 .modal-card p {
   margin-bottom: 1.5rem;
+}
+
+.booked-card {
+  width: min(100%, 34rem);
+  padding: 2.5rem 1.7rem 2rem;
+  border: 1px solid rgba(255, 78, 200, 0.4);
+  box-shadow: 0 0 48px rgba(255, 78, 200, 0.16);
+}
+
+.booked-check {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 0.85rem;
+  color: var(--neon);
+}
+
+.booked-check svg {
+  width: 100%;
+  height: 100%;
+}
+
+.booked-card .kicker {
+  margin-bottom: 0.2rem;
+}
+
+.booked-card h2 {
+  font-size: clamp(2.8rem, 8vw, 4.3rem);
+  margin: 0.15rem 0 1.15rem;
+}
+
+.booked-recap {
+  background: #111;
+  border: 1px solid rgba(255, 78, 200, 0.28);
+  padding: 1.05rem 1.15rem;
+  margin: 0 0 1.15rem;
+  text-align: left;
+}
+
+.booked-recap p {
+  margin: 0 0 0.4rem;
+  color: #f4f0f2;
+}
+
+.booked-recap p:last-child {
+  margin-bottom: 0;
+}
+
+.booked-recap .booked-when {
+  font-size: 1.38rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.booked-recap .booked-service {
+  color: #f0c9d6;
+}
+
+.booked-note {
+  color: #efe8eb;
+  font-size: 1.08rem;
+  margin-bottom: 1.4rem;
 }
 
 .before .policies-title {

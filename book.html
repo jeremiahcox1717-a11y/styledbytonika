@@ -8,8 +8,8 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=64" />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=65" />
 </head>
 <body class="book-page">
   <header class="book-top">
@@ -30,6 +30,11 @@
   <section class="book">
     <p class="kicker">Reserve your chair</p>
     <h1 class="neon">Book Your Appointment</h1>
+    <p class="book-hours">
+      <span><strong data-field="hours-sat-label">Saturday</strong> <span data-field="hours-sat-text">9:00 AM – 5:00 PM</span></span>
+      <span class="book-hours-dot" aria-hidden="true">·</span>
+      <span><strong data-field="hours-sun-label">Sunday</strong> <span data-field="hours-sun-text">9:00 AM – 5:00 PM</span></span>
+    </p>
     <p class="book-lede" data-field="book-lede">
       Pick a service and a time that works. A non-refundable $25 deposit holds
       your spot and goes toward your balance. Remaining balance is cash only.
@@ -119,15 +124,22 @@
   </section>
 
   <div class="modal" id="success-modal" hidden>
-    <div class="modal-card" role="dialog" aria-labelledby="success-title" aria-modal="true">
-      <p class="kicker">You’re on the list</p>
-      <h2 class="neon" id="success-title">Request received</h2>
-      <p id="success-copy"></p>
+    <div class="modal-card booked-card" role="dialog" aria-labelledby="success-title" aria-modal="true">
+      <p class="booked-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M7.5 12.5 10.5 15.5 16.5 9"/>
+        </svg>
+      </p>
+      <p class="kicker">Appointment requested</p>
+      <h2 class="neon" id="success-title">You’re booked</h2>
+      <div id="success-copy" class="booked-recap"></div>
+      <p class="booked-note">Tonika has your request. You’ll get a text or email to confirm.</p>
       <a class="submit" href="index.html">Back to home</a>
     </div>
   </div>
 
   <script src="site-content.js?v=5"></script>
-  <script src="script.js?v=7"></script>
+  <script src="script.js?v=8"></script>
 </body>
 </html>
