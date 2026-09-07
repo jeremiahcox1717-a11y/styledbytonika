@@ -630,8 +630,8 @@ input,
 select,
 textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.38);
   color: #fff;
   font-family: var(--body);
   font-size: 1.1rem;
