@@ -13,8 +13,34 @@ if (dateInput && timeSelect && form) {
     return `${d.getFullYear()}-${month}-${day}`;
   };
 
-  dateInput.min = iso(today);
-  dateInput.max = iso(new Date(today.getFullYear(), today.getMonth() + 4, today.getDate()));
+  function fillWeekendDates() {
+    const keep = dateInput.value;
+    dateInput.innerHTML = `<option value="" disabled>Select a day</option>`;
+    const end = new Date();
+    end.setMonth(end.getMonth() + 4);
+    const cursor = new Date();
+    cursor.setHours(12, 0, 0, 0);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    while (cursor <= end) {
+      const weekday = cursor.getDay();
+      if ((weekday === 0 || weekday === 6) && cursor >= start) {
+        const opt = document.createElement("option");
+        opt.value = iso(cursor);
+        opt.textContent = cursor.toLocaleDateString("en-CA", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        });
+        dateInput.appendChild(opt);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    if (keep && [...dateInput.options].some((o) => o.value === keep)) dateInput.value = keep;
+    else dateInput.selectedIndex = 0;
+  }
+
+  fillWeekendDates();
 
   function hoursFor(dateStr) {
     const day = new Date(`${dateStr}T12:00:00`).getDay();
@@ -33,11 +59,11 @@ if (dateInput && timeSelect && form) {
   function fillTimes() {
     const hours = hoursFor(dateInput.value);
     if (!dateInput.value) {
-      timeSelect.innerHTML = `<option value="" disabled selected>Select a date first</option>`;
+      timeSelect.innerHTML = `<option value="" disabled selected>Select a day first</option>`;
       return;
     }
     if (!hours) {
-      timeSelect.innerHTML = `<option value="" disabled selected>Closed weekdays — Saturday & Sunday only</option>`;
+      timeSelect.innerHTML = `<option value="" disabled selected>Saturday & Sunday only</option>`;
       return;
     }
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
@@ -57,7 +83,7 @@ if (dateInput && timeSelect && form) {
 
   dateInput.addEventListener("change", fillTimes);
 
-  const TZ = "America/New_York";
+  const TZ = "America/Vancouver";
   const submitBtn = form.querySelector('button[type="submit"]');
 
   function parseClock(value) {
@@ -183,7 +209,7 @@ if (dateInput && timeSelect && form) {
     }
 
     const { day, timeLabel, start } = formatWhen(data.date, data.time);
-    const where = [data.address, data.address2, data.city, data.state, data.zip]
+    const where = [data.address, data.address2, data.city, data.province || "British Columbia"]
       .filter(Boolean)
       .join(", ");
     const hours = Number(window.__SITE__?.reminderHours) || 3;
@@ -252,6 +278,9 @@ if (dateInput && timeSelect && form) {
     form.reset();
     const remindBox = document.querySelector("#sms-reminder");
     if (remindBox) remindBox.checked = true;
+    const province = document.querySelector("#province");
+    if (province) province.value = "British Columbia";
+    fillWeekendDates();
     fillTimes();
   });
 }
