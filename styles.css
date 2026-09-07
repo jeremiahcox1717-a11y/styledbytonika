@@ -734,7 +734,19 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem max(8.5rem, calc(env(safe-area-inset-right) + 8rem)) 1.1rem 6vw;
+  padding: 1.1rem 6vw;
+}
+
+.book-logo {
+  font-size: 1.7rem;
+}
+
+.book-back {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
 }
 
 .book-logo {
@@ -827,18 +839,27 @@ a {
 }
 
 .field-row-city {
-  grid-template-columns: 1.4fr 0.7fr 0.85fr;
+  grid-template-columns: 1.3fr 1fr;
 }
 
 .book-page .field label {
-  font-family: var(--display);
-  font-size: 0.72rem;
+  font-family: var(--body);
+  font-size: 1.18rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #f0c9d6;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #f3d6e4;
   display: block;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.4rem;
+}
+
+.book-form input:not([type="checkbox"]),
+.book-form select,
+.book-form textarea {
+  font-family: var(--body);
+  font-size: 1.12rem;
+  font-weight: 500;
 }
 
 .field label,
@@ -1411,7 +1432,7 @@ select {
   }
 
   .book-top {
-    padding: max(0.65rem, env(safe-area-inset-top)) max(6.8rem, calc(env(safe-area-inset-right) + 6.3rem)) 0.75rem max(0.8rem, env(safe-area-inset-left));
+    padding: max(0.65rem, env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right)) 0.75rem max(0.8rem, env(safe-area-inset-left));
     gap: 0.6rem;
   }
 
