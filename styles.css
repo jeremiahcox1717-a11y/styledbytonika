@@ -160,7 +160,7 @@ ul {
   font-size: 0;
   color: #fff;
   background: var(--neon);
-  border-radius: 50%;
+  border-radius: 0.9rem;
   box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.45);
 }
