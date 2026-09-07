@@ -44,7 +44,7 @@ gateForm.addEventListener("submit", async (event) => {
       goToStudio();
       return;
     }
-    if ((await sha256(value)) !== storedHash()) {
+    if (!(await passwordMatches(passInput.value))) {
       showGateError("Wrong password.");
       return;
     }

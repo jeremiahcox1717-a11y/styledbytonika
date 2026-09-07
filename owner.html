@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=52" />
+  <link rel="stylesheet" href="styles.css?v=53" />
   <link rel="stylesheet" href="owner.css?v=4" />
 </head>
 <body class="owner-page">
@@ -20,7 +20,7 @@
     <p id="gate-copy" class="owner-lede">Enter your owner password to open the studio and talk to the site bot.</p>
     <form id="gate-form" class="owner-gate-form">
       <label for="owner-pass">Password</label>
-      <input id="owner-pass" type="password" autocomplete="current-password" required />
+      <input id="owner-pass" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required />
       <label id="pass-confirm-wrap" hidden>
         Confirm password
         <input id="owner-pass-2" type="password" autocomplete="new-password" />
@@ -31,12 +31,12 @@
     <a class="owner-back" href="index.html">Back to public site</a>
   </div>
 
-  <script src="owner-config.js?v=3"></script>
+  <script src="owner-config.js?v=4"></script>
   <script>
     window.OWNER_CONFIG = window.OWNER_CONFIG || {};
     window.OWNER_CONFIG.passwordHash = "f3433d28e8e7b18a1e199de63297a9735267d61ae3e6b4c7891c80edb960a7f8";
   </script>
-  <script src="owner-auth.js?v=4"></script>
-  <script src="owner.js?v=8"></script>
+  <script src="owner-auth.js?v=5"></script>
+  <script src="owner.js?v=10"></script>
 </body>
 </html>

@@ -166,33 +166,6 @@ ul {
   animation: hover-bob 2.8s ease-in-out infinite;
 }
 
-.booking-kicker {
-  position: fixed;
-  top: max(0.9rem, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
-  width: 16.5rem;
-  height: 5.85rem;
-  padding: 0.65rem 0.9rem;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  text-decoration: none;
-  color: #fff;
-  background: var(--neon);
-  border-radius: 1.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
-  font-family: var(--display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  line-height: 1.2;
-  animation: hover-bob 2.8s ease-in-out infinite;
-}
-
 .nav-ig span {
   position: absolute;
   width: 1px;
@@ -238,8 +211,7 @@ ul {
 }
 
 .nav-ig:hover,
-.book-bubble:hover,
-.booking-kicker:hover {
+.book-bubble:hover {
   animation: none;
   translate: 0 -0.28rem;
   scale: 1.05;
@@ -258,8 +230,7 @@ ul {
 
 @media (prefers-reduced-motion: reduce) {
   .nav-ig,
-  .book-bubble,
-  .booking-kicker {
+  .book-bubble {
     animation: none;
   }
 }
@@ -1211,18 +1182,6 @@ select {
   }
 }
 
-@media (max-width: 900px) {
-  .booking-kicker {
-    top: max(6.4rem, calc(env(safe-area-inset-top) + 5.8rem));
-    width: calc(100vw - 1.6rem);
-    height: 5.15rem;
-  }
-
-  .book {
-    padding-top: 8.4rem;
-  }
-}
-
 @media (max-width: 480px) {
   .canva-page {
     width: 100%;
@@ -1250,7 +1209,7 @@ select {
   }
 
   .book {
-    padding: 7.6rem 1.05rem 5.5rem;
+    padding: 1.1rem 1.05rem 5.5rem;
   }
 
   .field-row {
@@ -1272,13 +1231,6 @@ select {
     border-radius: 1.05rem;
     top: max(0.7rem, env(safe-area-inset-top));
     right: max(0.7rem, env(safe-area-inset-right));
-  }
-
-  .booking-kicker {
-    top: max(6.4rem, calc(env(safe-area-inset-top) + 5.8rem));
-    width: calc(100vw - 1.6rem);
-    height: 5.15rem;
-    border-radius: 1.05rem;
   }
 
   .hotspot-phone,

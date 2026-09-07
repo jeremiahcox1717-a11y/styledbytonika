@@ -9,6 +9,21 @@ async function sha256(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function passVariants(typed) {
+  const raw = String(typed ?? "");
+  const trimmed = raw.trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+  const lower = trimmed.toLowerCase();
+  const noDot = lower.replace(/\.+$/, "");
+  return [...new Set([raw, trimmed, lower, noDot, trimmed.replace(/\.+$/, "")].filter(Boolean))];
+}
+
+async function passwordMatches(typed) {
+  const allowed = storedHash();
+  if (!allowed) return false;
+  const hashes = await Promise.all(passVariants(typed).map(sha256));
+  return hashes.includes(allowed);
+}
+
 function storedHash() {
   const fromConfig = window.OWNER_CONFIG && window.OWNER_CONFIG.passwordHash;
   return String(fromConfig || localStorage.getItem(HASH_KEY) || "").trim().toLowerCase();
