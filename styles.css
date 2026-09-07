@@ -163,6 +163,34 @@ ul {
   border-radius: 1.2rem;
   box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.45);
+  animation: hover-bob 2.8s ease-in-out infinite;
+}
+
+.booking-kicker {
+  position: fixed;
+  top: max(1.05rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: min(22rem, calc(100vw - 14.5rem));
+  min-height: 3.55rem;
+  padding: 0.9rem 1.25rem;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: var(--neon);
+  border-radius: 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
+  font-family: var(--display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  animation: hover-bob 2.8s ease-in-out infinite;
 }
 
 .nav-ig span {
@@ -189,23 +217,51 @@ ul {
   right: max(1.15rem, env(safe-area-inset-right));
   bottom: max(1.15rem, env(safe-area-inset-bottom));
   z-index: 40;
-  width: 4.35rem;
-  height: 4.35rem;
+  width: 5.85rem;
+  height: 5.85rem;
   display: grid;
   place-items: center;
   text-align: center;
   background: var(--neon);
   color: #fff;
   font-family: var(--display);
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.15;
   padding: 0.45rem;
-  border-radius: 0.55rem;
+  border-radius: 1.2rem;
   box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.45);
+  animation: hover-bob 2.8s ease-in-out infinite;
+}
+
+.nav-ig:hover,
+.book-bubble:hover,
+.booking-kicker:hover {
+  animation: none;
+  translate: 0 -0.28rem;
+  scale: 1.05;
+  box-shadow: 0 16px 36px rgba(255, 78, 200, 0.7);
+}
+
+@keyframes hover-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -0.48rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-ig,
+  .book-bubble,
+  .booking-kicker {
+    animation: none;
+  }
 }
 
 .hero {
@@ -1155,6 +1211,13 @@ select {
   }
 }
 
+@media (max-width: 900px) {
+  .booking-kicker {
+    top: max(6.4rem, calc(env(safe-area-inset-top) + 5.8rem));
+    max-width: calc(100vw - 1.6rem);
+  }
+}
+
 @media (max-width: 480px) {
   .canva-page {
     width: 100%;
@@ -1190,9 +1253,10 @@ select {
   }
 
   .book-bubble {
-    width: 3.9rem;
-    height: 3.9rem;
-    font-size: 0.55rem;
+    width: 5.15rem;
+    height: 5.15rem;
+    font-size: 0.58rem;
+    border-radius: 1.05rem;
     right: max(0.7rem, env(safe-area-inset-right));
     bottom: max(0.85rem, env(safe-area-inset-bottom));
   }
@@ -1203,6 +1267,12 @@ select {
     border-radius: 1.05rem;
     top: max(0.7rem, env(safe-area-inset-top));
     right: max(0.7rem, env(safe-area-inset-right));
+  }
+
+  .booking-kicker {
+    top: max(6.4rem, calc(env(safe-area-inset-top) + 5.8rem));
+    max-width: calc(100vw - 1.6rem);
+    border-radius: 1.05rem;
   }
 
   .hotspot-phone,
