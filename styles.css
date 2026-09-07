@@ -63,7 +63,6 @@ ul {
   z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0.85rem 6vw;
   background: rgba(0, 0, 0, 0.92);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -83,6 +82,30 @@ ul {
   background: var(--neon);
   padding: 0.7rem 1.15rem;
   box-shadow: 0 0 18px rgba(255, 78, 200, 0.45);
+}
+
+.book-bubble {
+  position: fixed;
+  left: max(1.15rem, env(safe-area-inset-left));
+  bottom: max(1.15rem, env(safe-area-inset-bottom));
+  z-index: 40;
+  width: 4.6rem;
+  height: 4.6rem;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: var(--neon);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  padding: 0.45rem;
+  border-radius: 0.55rem;
+  box-shadow: 0 10px 28px rgba(255, 78, 200, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.45);
 }
 
 .hero {
