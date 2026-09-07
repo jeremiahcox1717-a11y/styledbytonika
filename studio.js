@@ -12,6 +12,7 @@ const publishBtn = document.querySelector("#publish-btn");
 const publishStatus = document.querySelector("#publish-status");
 const geminiInput = document.querySelector("#gemini-key");
 const githubInput = document.querySelector("#github-token");
+const smsWebhookInput = document.querySelector("#sms-webhook");
 
 let siteContent = null;
 
@@ -33,6 +34,7 @@ function addBot(text) {
 async function loadContent() {
   const res = await fetch(`content.json?ts=${Date.now()}`);
   siteContent = await res.json();
+  if (smsWebhookInput) smsWebhookInput.value = siteContent.smsWebhook || "";
 }
 
 function cloneContent(data) {
@@ -103,7 +105,11 @@ function applyLocalEdit(message, content) {
     next.addressNote = address[1].trim();
     changed = true;
   }
-  const bio = message.match(/bio[:\s]+([\s\S]+)/i);
+  const webhook = message.match(/https?:\/\/\S+/i);
+  if (webhook && /sms|webhook|reminder|twilio/.test(text)) {
+    next.smsWebhook = webhook[0].replace(/[.,)]+$/, "");
+    changed = true;
+  }
   if (bio) {
     next.bio = bio[1].trim();
     changed = true;
@@ -190,6 +196,10 @@ geminiInput.addEventListener("change", () => {
 });
 githubInput.addEventListener("change", () => {
   sessionStorage.setItem(GITHUB_KEY, githubInput.value.trim());
+});
+smsWebhookInput?.addEventListener("change", () => {
+  if (!siteContent) return;
+  siteContent.smsWebhook = smsWebhookInput.value.trim();
 });
 
 chatForm.addEventListener("submit", async (event) => {
