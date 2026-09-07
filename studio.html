@@ -10,6 +10,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=46" />
   <link rel="stylesheet" href="owner.css?v=4" />
+  <script src="owner-config.js"></script>
+  <script src="owner-auth.js?v=1"></script>
+  <script>
+    if (!isUnlocked()) window.location.replace("owner.html");
+  </script>
 </head>
 <body class="owner-page owner-unlocked">
   <div class="owner-studio">
@@ -80,8 +85,6 @@
     </section>
   </div>
 
-  <script src="owner-config.js"></script>
-  <script src="owner-auth.js?v=1"></script>
   <script src="studio.js?v=1"></script>
 </body>
 </html>

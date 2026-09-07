@@ -1,6 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /owner.html
+Disallow: /studio.html
 Disallow: /owner.js
+Disallow: /studio.js
+Disallow: /owner-auth.js
 Disallow: /owner.css
 Disallow: /owner-config.js
