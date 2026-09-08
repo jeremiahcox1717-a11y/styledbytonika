@@ -72,6 +72,8 @@ if (dateInput && timeSelect && form) {
       clearTimeout(timer);
     }
   }
+
+  async function loadTaken() {
     takenSlots.clear();
     try {
       const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]");
@@ -80,11 +82,10 @@ if (dateInput && timeSelect && form) {
       /* ignore */
     }
     try {
-      const res = await fetch(`bookings.json?ts=${Date.now()}`);
+      const { res, out } = await fetchJson(`bookings.json?ts=${Date.now()}`);
       if (res.ok) {
-        const data = await res.json();
         addTaken(
-          (data.taken || []).map((item) => (typeof item === "string" ? item : `${item.date}|${item.time}`))
+          (out.taken || []).map((item) => (typeof item === "string" ? item : `${item.date}|${item.time}`))
         );
       }
     } catch {
@@ -93,8 +94,7 @@ if (dateInput && timeSelect && form) {
     liveCalendar = "";
     for (const url of bookingEndpoints()) {
       try {
-        const res = await fetch(`${url}?slots=1`);
-        const out = await res.json().catch(() => ({}));
+        const { res, out } = await fetchJson(`${url}?slots=1`);
         if (res.ok && Array.isArray(out.taken)) {
           liveCalendar = url;
           addTaken(out.taken);
@@ -109,12 +109,11 @@ if (dateInput && timeSelect && form) {
   async function claimSlot(dateStr, timeValue) {
     if (!liveCalendar) return { ok: true, via: "local" };
     try {
-      const res = await fetch(liveCalendar, {
+      const { res, out } = await fetchJson(liveCalendar, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "claim", date: dateStr, time: timeValue }),
-      });
-      const out = await res.json().catch(() => ({}));
+      }, 8000);
       if (res.status === 409 || out.error === "taken") return { ok: false, taken: true };
       if (!res.ok || out.ok === false) return { ok: false, taken: false };
       return { ok: true, via: "live" };
