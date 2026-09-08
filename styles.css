@@ -907,10 +907,6 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.38);
 }
 
-.inspo-preview video {
-  object-fit: cover;
-}
-
 .inspo-preview-name {
   margin: 0;
   color: #c8b8be;

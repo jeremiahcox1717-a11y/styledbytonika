@@ -338,13 +338,7 @@ if (dateInput && timeSelect && form) {
     a.remove();
   }
 
-  async function sendBookingEmail(data, day, timeLabel, where, photoFile) {
-    const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
-      throw new Error("Bad inbox");
-    }
-    const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
-    const body = bookingEmailBody(data, day, timeLabel, where, photoFile);
+  async function postFormSubmit(inbox, subject, body, data, day, timeLabel, where, hairFile, inspoFile, attachFile, extraFields) {
     const fd = new FormData();
     fd.append("name", data.name);
     fd.append("phone", data.phone);
@@ -354,26 +348,75 @@ if (dateInput && timeSelect && form) {
     fd.append("date", day);
     fd.append("time", timeLabel);
     fd.append("address", where);
+    fd.append("current_hair", hairFile?.name || "(none uploaded)");
+    fd.append("inspiration_file", inspoFile?.name || "(none uploaded)");
     fd.append("inspiration_link", data["inspo-url"] || "(none)");
     fd.append("notes", data.notes || "(none)");
-    if (photoFile) fd.append("attachment", photoFile, photoFile.name);
+    Object.entries(extraFields || {}).forEach(([key, value]) => fd.append(key, value));
+    if (attachFile) fd.append("attachment", attachFile, attachFile.name);
     fd.append("_subject", subject);
     fd.append("_template", "table");
     fd.append("_replyto", data.email);
+    const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: fd,
+    });
+    const out = await res.json().catch(() => ({}));
+    if (String(out.success) !== "true") throw new Error("FormSubmit failed");
+    return { inbox, subject, body, via: "formsubmit" };
+  }
+
+  async function sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile) {
+    const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
+      throw new Error("Bad inbox");
+    }
+    const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
+    const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
+    const attachments = [];
+    if (hairFile) attachments.push({ file: hairFile, label: `Current hair ${mediaKind(hairFile)}` });
+    if (inspoFile) attachments.push({ file: inspoFile, label: `Inspiration ${mediaKind(inspoFile)}` });
 
     try {
-      const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: fd,
-      });
-      const out = await res.json().catch(() => ({}));
-      if (String(out.success) === "true") return { inbox, subject, body, via: "formsubmit" };
+      const first = attachments[0]?.file || null;
+      const sent = await postFormSubmit(
+        inbox,
+        subject,
+        body,
+        data,
+        day,
+        timeLabel,
+        where,
+        hairFile,
+        inspoFile,
+        first,
+        first ? { attached_file: attachments[0].label } : {}
+      );
+      if (attachments[1]) {
+        try {
+          await postFormSubmit(
+            inbox,
+            `${attachments[1].label} for ${data.name}`,
+            body,
+            data,
+            day,
+            timeLabel,
+            where,
+            hairFile,
+            inspoFile,
+            attachments[1].file,
+            { attached_file: attachments[1].label }
+          );
+        } catch {
+          /* main booking already reached the inbox */
+        }
+      }
+      return sent;
     } catch {
-      /* fall through to mailto */
+      openMailto(inbox, subject, body);
+      return { inbox, subject, body, via: "mailto" };
     }
-    openMailto(inbox, subject, body);
-    return { inbox, subject, body, via: "mailto" };
   }
 
   form.addEventListener("submit", async (event) => {
@@ -381,10 +424,12 @@ if (dateInput && timeSelect && form) {
     formError.hidden = true;
 
     const data = Object.fromEntries(new FormData(form));
-    const photoFile = inspoInput?.files?.[0] || null;
-    if (photoFile && photoFile.size > MAX_INSPO_BYTES) {
+    const hairFile = hairPicker.file();
+    const inspoFile = inspoPicker.file();
+    const tooBig = [hairFile, inspoFile].find((file) => file && file.size > MAX_MEDIA_BYTES);
+    if (tooBig) {
       formError.hidden = false;
-      formError.textContent = "That photo is too large. Please use an image under 8 MB.";
+      formError.textContent = "That file is too large. Please use a photo or a short clip under 10 MB.";
       return;
     }
     if (hoursFor(data.date) == null) {
@@ -413,7 +458,7 @@ if (dateInput && timeSelect && form) {
 
     let sent;
     try {
-      sent = await sendBookingEmail(data, day, timeLabel, where, photoFile);
+      sent = await sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile);
     } catch {
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
@@ -461,14 +506,16 @@ if (dateInput && timeSelect && form) {
       }
     }
 
+    const hasMedia = Boolean(hairFile || inspoFile);
     const sendNote =
       sent?.via === "mailto"
-        ? photoFile
-          ? "An email to Tonika should have opened. Tap Send if you see it. The photo couldn’t be attached this way — add the image in that email if you can."
+        ? hasMedia
+          ? "An email to Tonika should have opened. Tap Send if you see it. The photo or video couldn’t be attached this way — add it in that email if you can."
           : "An email to Tonika should have opened. Tap Send if you see it — that’s how this request reaches her inbox."
         : "";
     const inspoParts = [];
-    if (photoFile) inspoParts.push("Inspiration photo sent.");
+    if (hairFile) inspoParts.push(`Current hair ${mediaKind(hairFile)} sent.`);
+    if (inspoFile) inspoParts.push(`Inspiration ${mediaKind(inspoFile)} sent.`);
     if (data["inspo-url"]) inspoParts.push("Inspiration link sent.");
     showBooked({
       name: data.name,
@@ -486,7 +533,8 @@ if (dateInput && timeSelect && form) {
       submitBtn.textContent = "Request Appointment";
     }
     form.reset();
-    clearInspoPhoto();
+    hairPicker.clear();
+    inspoPicker.clear();
     const remindBox = document.querySelector("#sms-reminder");
     if (remindBox) remindBox.checked = true;
     const province = document.querySelector("#province");
