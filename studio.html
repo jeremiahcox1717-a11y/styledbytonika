@@ -59,7 +59,7 @@
           <input id="sms-webhook" type="url" autocomplete="off" placeholder="https://styledbytonika-sms.workers.dev" />
         </label>
         <p class="owner-hint">Gemini key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. GitHub token: Settings → Developer settings → Personal access tokens, with access to this repo. After you click Publish, the live site updates in about a minute.</p>
-        <p class="owner-hint">Text reminders: create a Twilio account, a phone number, and a Messaging Service. Deploy <code>sms-worker.js</code> with Cloudflare Wrangler, save the three Twilio secrets, paste the worker URL here, then Publish. Clients are texted 3 hours before with the day and time.</p>
+        <p class="owner-hint">Text reminders: create a Twilio account, a phone number, and a Messaging Service. Deploy <code>sms-worker.js</code> with Cloudflare Wrangler, save the three Twilio secrets, paste the worker URL here, then Publish. Clients are texted 3 hours before with the day and time. The same worker also holds 3-hour appointment blocks so two people cannot book the same time.</p>
       </details>
     </section>
 

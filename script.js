@@ -6,11 +6,149 @@ const modal = document.querySelector("#success-modal");
 const successCopy = document.querySelector("#success-copy");
 
 if (dateInput && timeSelect && form) {
+  const TZ = "America/Vancouver";
+  const LOCAL_TAKEN_KEY = "sbt-taken-slots";
+  const takenSlots = new Set();
+  let liveCalendar = "";
+  let timesGen = 0;
+
   const iso = (d) => {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${d.getFullYear()}-${month}-${day}`;
   };
+
+  function slotHours() {
+    const n = Number(window.__SITE__?.slotHours);
+    return n > 0 ? n : 3;
+  }
+
+  function clockValue(h, min = 0) {
+    return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  }
+
+  function slotKey(dateStr, timeValue) {
+    const clock = parseClock(timeValue);
+    if (!clock) return `${dateStr}|${timeValue}`;
+    return `${dateStr}|${clockValue(clock.h, clock.min)}`;
+  }
+
+  function addTaken(keys) {
+    (keys || []).forEach((key) => {
+      if (key) takenSlots.add(String(key));
+    });
+  }
+
+  function rememberTaken(key) {
+    if (!key) return;
+    takenSlots.add(key);
+    try {
+      const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]");
+      if (!local.includes(key)) {
+        local.push(key);
+        localStorage.setItem(LOCAL_TAKEN_KEY, JSON.stringify(local));
+      }
+    } catch {
+      /* private mode */
+    }
+  }
+
+  function bookingEndpoints() {
+    const urls = [];
+    const configured = String(window.__SITE__?.bookingApi || "").trim();
+    if (configured) urls.push(configured.replace(/\/$/, ""));
+    urls.push("https://styledbytonika-sms.workers.dev");
+    return [...new Set(urls)];
+  }
+
+  async function loadTaken() {
+    takenSlots.clear();
+    try {
+      const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]");
+      addTaken(local);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const res = await fetch(`bookings.json?ts=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        addTaken(
+          (data.taken || []).map((item) => (typeof item === "string" ? item : `${item.date}|${item.time}`))
+        );
+      }
+    } catch {
+      /* keep local copy */
+    }
+    liveCalendar = "";
+    for (const url of bookingEndpoints()) {
+      try {
+        const res = await fetch(`${url}?slots=1`);
+        const out = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(out.taken)) {
+          liveCalendar = url;
+          addTaken(out.taken);
+          break;
+        }
+      } catch {
+        /* try the next calendar URL */
+      }
+    }
+  }
+
+  async function claimSlot(dateStr, timeValue) {
+    if (!liveCalendar) return { ok: true, via: "local" };
+    try {
+      const res = await fetch(liveCalendar, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "claim", date: dateStr, time: timeValue }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (res.status === 409 || out.error === "taken") return { ok: false, taken: true };
+      if (!res.ok || out.ok === false) return { ok: false, taken: false };
+      return { ok: true, via: "live" };
+    } catch {
+      return { ok: false, taken: false };
+    }
+  }
+
+  async function releaseSlot(dateStr, timeValue) {
+    if (!liveCalendar) return;
+    try {
+      await fetch(liveCalendar, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "release", date: dateStr, time: timeValue }),
+      });
+    } catch {
+      /* email already failed */
+    }
+  }
+
+  function vancouverStamp() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date());
+    const get = (type) => parts.find((p) => p.type === type)?.value;
+    return {
+      date: `${get("year")}-${get("month")}-${get("day")}`,
+      minutes: Number(get("hour")) * 60 + Number(get("minute")),
+    };
+  }
+
+  function slotHasPassed(dateStr, h, min) {
+    const now = vancouverStamp();
+    if (dateStr > now.date) return false;
+    if (dateStr < now.date) return true;
+    return h * 60 + min <= now.minutes;
+  }
 
   function fillWeekendDates() {
     const keep = dateInput.value;
@@ -55,7 +193,26 @@ if (dateInput && timeSelect && form) {
     return null;
   }
 
-  function fillTimes() {
+  function isOpenSlot(dateStr, timeValue) {
+    const hours = hoursFor(dateStr);
+    const clock = parseClock(timeValue);
+    if (!hours || !clock) return false;
+    const span = slotHours();
+    if (clock.min !== 0) return false;
+    if (clock.h < hours.start || clock.h >= hours.end) return false;
+    return (clock.h - hours.start) % span === 0;
+  }
+
+  function timeLabelAt(h, min = 0) {
+    return new Date(`2026-01-01T${clockValue(h, min)}:00`).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  async function fillTimes() {
+    const gen = ++timesGen;
+    const keep = timeSelect.value;
     const hours = hoursFor(dateInput.value);
     if (!dateInput.value) {
       timeSelect.innerHTML = `<option value="" disabled selected>Select a day first</option>`;
@@ -65,24 +222,49 @@ if (dateInput && timeSelect && form) {
       timeSelect.innerHTML = `<option value="" disabled selected>Saturday & Sunday only</option>`;
       return;
     }
+    timeSelect.innerHTML = `<option value="" disabled selected>Loading times…</option>`;
+    await loadTaken();
+    if (gen !== timesGen) return;
+
+    const span = slotHours();
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
-    for (let h = hours.start; h < hours.end; h++) {
-      for (const m of ["00", "30"]) {
-        const label = new Date(`2026-01-01T${String(h).padStart(2, "0")}:${m}:00`).toLocaleTimeString(
-          "en-US",
-          { hour: "numeric", minute: "2-digit" }
-        );
-        const opt = document.createElement("option");
-        opt.value = `${String(h).padStart(2, "0")}:${m}`;
+    let openCount = 0;
+    for (let h = hours.start; h < hours.end; h += span) {
+      const value = clockValue(h);
+      const label = `${timeLabelAt(h)} – ${timeLabelAt(h + span)}`;
+      const opt = document.createElement("option");
+      opt.value = value;
+      const key = `${dateInput.value}|${value}`;
+      const passed = slotHasPassed(dateInput.value, h, 0);
+      const booked = takenSlots.has(key);
+      if (passed) {
+        opt.disabled = true;
+        opt.textContent = `${label} (passed)`;
+      } else if (booked) {
+        opt.disabled = true;
+        opt.textContent = `${label} (booked)`;
+      } else {
         opt.textContent = label;
-        timeSelect.appendChild(opt);
+        openCount += 1;
       }
+      timeSelect.appendChild(opt);
+    }
+    if (!openCount) {
+      timeSelect.innerHTML = `<option value="" disabled selected>No times left this day</option>`;
+      return;
+    }
+    if (keep && [...timeSelect.options].some((o) => o.value === keep && !o.disabled)) {
+      timeSelect.value = keep;
     }
   }
 
-  dateInput.addEventListener("change", fillTimes);
+  dateInput.addEventListener("change", () => {
+    fillTimes();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === LOCAL_TAKEN_KEY && dateInput.value) fillTimes();
+  });
 
-  const TZ = "America/Vancouver";
   const submitBtn = form.querySelector('button[type="submit"]');
 
   function parseClock(value) {
@@ -442,6 +624,28 @@ if (dateInput && timeSelect && form) {
       formError.textContent = "Please choose a time that works for you.";
       return;
     }
+    if (!isOpenSlot(data.date, data.time)) {
+      formError.hidden = false;
+      formError.textContent = "Please pick a 3-hour time (9:00 AM, 12:00 PM, or 3:00 PM).";
+      fillTimes();
+      return;
+    }
+    const picked = parseClock(data.time);
+    if (picked && slotHasPassed(data.date, picked.h, picked.min)) {
+      formError.hidden = false;
+      formError.textContent = "That time has already passed. Please pick a later time.";
+      fillTimes();
+      return;
+    }
+
+    const holdKey = slotKey(data.date, data.time);
+    await loadTaken();
+    if (takenSlots.has(holdKey)) {
+      formError.hidden = false;
+      formError.textContent = "That time was just booked. Please pick another.";
+      fillTimes();
+      return;
+    }
 
     const { day, timeLabel, start } = formatWhen(data.date, data.time);
     const where = [data.address, data.address2, data.city, data.province || "British Columbia"]
@@ -456,10 +660,25 @@ if (dateInput && timeSelect && form) {
       submitBtn.textContent = "Sending…";
     }
 
+    const claimed = await claimSlot(data.date, data.time);
+    if (!claimed.ok) {
+      formError.hidden = false;
+      formError.textContent = claimed.taken
+        ? "That time was just booked. Please pick another."
+        : "Couldn’t hold that time. Please try again.";
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Request Appointment";
+      }
+      fillTimes();
+      return;
+    }
+
     let sent;
     try {
       sent = await sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile);
     } catch {
+      if (claimed.via === "live") await releaseSlot(data.date, data.time);
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
       if (submitBtn) {
@@ -468,6 +687,7 @@ if (dateInput && timeSelect && form) {
       }
       return;
     }
+    rememberTaken(holdKey);
 
     if (remindOn) {
       const webhook = String(window.__SITE__?.smsWebhook || "").trim();

@@ -19,6 +19,7 @@ const SLOT_END = 17;
 const ALLOWED = new Set([
   "https://styledbytonika.ca",
   "https://www.styledbytonika.ca",
+  "https://jeremiahcox1717-a11y.github.io",
   "http://127.0.0.1:5173",
   "http://localhost:5173",
 ]);
