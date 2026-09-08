@@ -61,7 +61,17 @@ if (dateInput && timeSelect && form) {
     return [...new Set(urls)];
   }
 
-  async function loadTaken() {
+  async function fetchJson(url, opts = {}, ms = 2500) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const res = await fetch(url, { ...opts, signal: ctrl.signal });
+      const out = await res.json().catch(() => ({}));
+      return { res, out };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
     takenSlots.clear();
     try {
       const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]");
