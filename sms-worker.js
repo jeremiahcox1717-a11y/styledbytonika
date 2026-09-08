@@ -185,16 +185,83 @@ export class BookingCalendar {
   }
 }
 
+async function cacheCalendar(payload) {
+  const cache = caches.default;
+  const cacheKey = new Request("https://styledbytonika.internal/calendar");
+  const action = String(payload.action || "list");
+  const today = todayStamp();
+  let data = { taken: [] };
+  const hit = await cache.match(cacheKey);
+  if (hit) data = await hit.json().catch(() => ({ taken: [] }));
+  data.taken = (data.taken || []).filter((key) => String(key).split("|")[0] >= today);
+
+  async function save() {
+    await cache.put(
+      cacheKey,
+      new Response(JSON.stringify(data), {
+        headers: { "Content-Type": "application/json", "Cache-Control": "max-age=31536000" },
+      })
+    );
+  }
+
+  if (action === "list") return { ok: true, taken: data.taken, status: 200 };
+
+  const key = slotKey(payload.date, payload.time);
+  if (!key || !isValidSlot(payload.date, payload.time)) {
+    return { ok: false, error: "That is not an open 3-hour time.", status: 400 };
+  }
+
+  if (action === "claim") {
+    if (data.taken.includes(key)) return { ok: false, error: "taken", status: 409 };
+    data.taken.push(key);
+    await save();
+    return { ok: true, key, status: 200 };
+  }
+
+  if (action === "release") {
+    data.taken = data.taken.filter((item) => item !== key);
+    await save();
+    return { ok: true, key, status: 200 };
+  }
+
+  return { ok: false, error: "Unknown action", status: 400 };
+}
+
+async function githubTaken() {
+  try {
+    const res = await fetch(
+      `https://raw.githubusercontent.com/jeremiahcox1717-a11y/styledbytonika/main/bookings.json?ts=${Date.now()}`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.taken || [];
+  } catch {
+    return [];
+  }
+}
+
 async function calendarAction(env, payload) {
-  const stub = calendarStub(env);
-  if (!stub) return { ok: false, error: "Calendar is not configured", status: 503 };
-  const res = await stub.fetch("https://calendar/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const out = await res.json().catch(() => ({}));
-  return { ...out, status: res.status };
+  let out = null;
+  if (env.CALENDAR) {
+    try {
+      const stub = env.CALENDAR.get(env.CALENDAR.idFromName("bookings"));
+      const res = await stub.fetch("https://calendar/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      out = { ...(await res.json().catch(() => ({}))), status: res.status };
+    } catch {
+      out = null;
+    }
+  }
+  if (!out || out.status === 503) out = await cacheCalendar(payload);
+  if ((payload.action || "list") === "list") {
+    const extra = await githubTaken();
+    const taken = [...new Set([...(out.taken || []), ...extra])];
+    return { ok: true, taken, status: 200 };
+  }
+  return out;
 }
 
 async function twilioSend(env, fields) {

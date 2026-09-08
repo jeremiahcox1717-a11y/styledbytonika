@@ -53,6 +53,94 @@ if (dateInput && timeSelect && form) {
     }
   }
 
+  function forgetTaken(key) {
+    if (!key) return;
+    takenSlots.delete(key);
+    try {
+      const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]").filter((item) => item !== key);
+      localStorage.setItem(LOCAL_TAKEN_KEY, JSON.stringify(local));
+    } catch {
+      /* private mode */
+    }
+  }
+
+  function takenListFrom(data) {
+    return (data?.taken || []).map((item) => (typeof item === "string" ? item : `${item.date}|${item.time}`));
+  }
+
+  async function loadTaken() {
+    takenSlots.clear();
+    try {
+      addTaken(JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]"));
+    } catch {
+      /* ignore */
+    }
+    liveCalendar = "";
+    const sources = [
+      fetchJson(`bookings.json?ts=${Date.now()}`),
+      fetchJson(
+        `https://raw.githubusercontent.com/jeremiahcox1717-a11y/styledbytonika/main/bookings.json?ts=${Date.now()}`
+      ),
+    ];
+    for (const url of bookingEndpoints()) {
+      sources.push(
+        fetchJson(`${url}?slots=1`).then((result) => {
+          if (result.res?.ok && Array.isArray(result.out?.taken)) liveCalendar = liveCalendar || url;
+          return result;
+        })
+      );
+    }
+    const results = await Promise.allSettled(sources);
+    results.forEach((result) => {
+      if (result.status !== "fulfilled" || !result.value?.res?.ok) return;
+      addTaken(takenListFrom(result.value.out));
+    });
+  }
+
+  async function claimSlot(dateStr, timeValue) {
+    const key = slotKey(dateStr, timeValue);
+    await loadTaken();
+    if (takenSlots.has(key)) return { ok: false, taken: true, key };
+
+    if (!liveCalendar) {
+      for (const url of bookingEndpoints()) {
+        try {
+          const { res, out } = await fetchJson(`${url}?slots=1`);
+          if (res.ok && Array.isArray(out.taken)) {
+            liveCalendar = url;
+            addTaken(out.taken);
+            break;
+          }
+        } catch {
+          /* try next */
+        }
+      }
+    }
+
+    if (liveCalendar) {
+      try {
+        const { res, out } = await fetchJson(
+          liveCalendar,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "claim", date: dateStr, time: timeValue }),
+          },
+          8000
+        );
+        if (res.status === 409 || out.error === "taken") return { ok: false, taken: true, key };
+        if (!res.ok || out.ok === false) return { ok: false, taken: false, key };
+        rememberTaken(key);
+        return { ok: true, via: "live", key };
+      } catch {
+        return { ok: false, taken: false, key };
+      }
+    }
+
+    rememberTaken(key);
+    return { ok: true, via: "local", key };
+  }
+
   function bookingEndpoints() {
     const urls = [];
     const configured = String(window.__SITE__?.bookingApi || "").trim();
@@ -70,55 +158,6 @@ if (dateInput && timeSelect && form) {
       return { res, out };
     } finally {
       clearTimeout(timer);
-    }
-  }
-
-  async function loadTaken() {
-    takenSlots.clear();
-    try {
-      const local = JSON.parse(localStorage.getItem(LOCAL_TAKEN_KEY) || "[]");
-      addTaken(local);
-    } catch {
-      /* ignore */
-    }
-    try {
-      const { res, out } = await fetchJson(`bookings.json?ts=${Date.now()}`);
-      if (res.ok) {
-        addTaken(
-          (out.taken || []).map((item) => (typeof item === "string" ? item : `${item.date}|${item.time}`))
-        );
-      }
-    } catch {
-      /* keep local copy */
-    }
-    liveCalendar = "";
-    for (const url of bookingEndpoints()) {
-      try {
-        const { res, out } = await fetchJson(`${url}?slots=1`);
-        if (res.ok && Array.isArray(out.taken)) {
-          liveCalendar = url;
-          addTaken(out.taken);
-          break;
-        }
-      } catch {
-        /* try the next calendar URL */
-      }
-    }
-  }
-
-  async function claimSlot(dateStr, timeValue) {
-    if (!liveCalendar) return { ok: true, via: "local" };
-    try {
-      const { res, out } = await fetchJson(liveCalendar, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "claim", date: dateStr, time: timeValue }),
-      }, 8000);
-      if (res.status === 409 || out.error === "taken") return { ok: false, taken: true };
-      if (!res.ok || out.ok === false) return { ok: false, taken: false };
-      return { ok: true, via: "live" };
-    } catch {
-      return { ok: false, taken: false };
     }
   }
 
@@ -240,23 +279,13 @@ if (dateInput && timeSelect && form) {
     let openCount = 0;
     for (let h = hours.start; h < hours.end; h += span) {
       const value = clockValue(h);
-      const label = `${timeLabelAt(h)} – ${timeLabelAt(h + span)}`;
+      const key = `${dateInput.value}|${value}`;
+      if (slotHasPassed(dateInput.value, h, 0) || takenSlots.has(key)) continue;
       const opt = document.createElement("option");
       opt.value = value;
-      const key = `${dateInput.value}|${value}`;
-      const passed = slotHasPassed(dateInput.value, h, 0);
-      const booked = takenSlots.has(key);
-      if (passed) {
-        opt.disabled = true;
-        opt.textContent = `${label} (passed)`;
-      } else if (booked) {
-        opt.disabled = true;
-        opt.textContent = `${label} (booked)`;
-      } else {
-        opt.textContent = label;
-        openCount += 1;
-      }
+      opt.textContent = `${timeLabelAt(h)} – ${timeLabelAt(h + span)}`;
       timeSelect.appendChild(opt);
+      openCount += 1;
     }
     if (!openCount) {
       timeSelect.innerHTML = `<option value="" disabled selected>No times left this day</option>`;
@@ -688,6 +717,7 @@ if (dateInput && timeSelect && form) {
       sent = await sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile);
     } catch {
       if (claimed.via === "live") await releaseSlot(data.date, data.time);
+      else forgetTaken(holdKey);
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
       if (submitBtn) {
