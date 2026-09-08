@@ -145,7 +145,7 @@ if (dateInput && timeSelect && form) {
     return { day, timeLabel, start };
   }
 
-  function showBooked({ name, service, day, timeLabel, where, reminderLine, sendNote }) {
+  function showBooked({ name, service, day, timeLabel, where, instagram, reminderLine, sendNote }) {
     successCopy.replaceChildren();
     const line = (cls, text) => {
       const p = document.createElement("p");
@@ -156,6 +156,7 @@ if (dateInput && timeSelect && form) {
     line("booked-hello", `You’re booked, ${name}.`);
     line("booked-when", `${day} at ${timeLabel}`);
     line("booked-service", service);
+    if (instagram) line("booked-ig", instagram);
     if (where) line("booked-where", where);
     if (reminderLine) line("booked-reminder", reminderLine);
     if (sendNote) line("booked-send-note", sendNote);
@@ -169,6 +170,7 @@ if (dateInput && timeSelect && form) {
       `Name: ${data.name}`,
       `Phone: ${data.phone}`,
       `Email: ${data.email}`,
+      `Instagram: ${data.instagram || "(none)"}`,
       `Service: ${data.service}`,
       `When: ${day} at ${timeLabel}`,
       `Address: ${where || "(none)"}`,
@@ -197,6 +199,7 @@ if (dateInput && timeSelect && form) {
     fd.append("name", data.name);
     fd.append("phone", data.phone);
     fd.append("email", data.email);
+    fd.append("instagram", data.instagram || "(none)");
     fd.append("service", data.service);
     fd.append("date", day);
     fd.append("time", timeLabel);
@@ -304,7 +307,7 @@ if (dateInput && timeSelect && form) {
       sent?.via === "mailto"
         ? "An email to Tonika should have opened. Tap Send if you see it — that’s how this request reaches her inbox."
         : "";
-    showBooked({ name: data.name, service: data.service, day, timeLabel, where, reminderLine, sendNote });
+    showBooked({ name: data.name, service: data.service, day, timeLabel, where, instagram: data.instagram, reminderLine, sendNote });
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = "Request Appointment";

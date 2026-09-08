@@ -821,6 +821,14 @@ a {
   line-height: 1.6;
 }
 
+.field-hint {
+  margin: 0.4rem 0 0;
+  color: #c8b8be;
+  font-size: 0.98rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
