@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=68" />
+  <link rel="stylesheet" href="styles.css?v=69" />
 </head>
 <body class="book-page">
   <header class="book-top">
@@ -101,9 +101,32 @@
         </div>
       </div>
 
-      <div class="field">
-        <label for="notes">Notes <span class="optional">(optional)</span></label>
-        <textarea id="notes" name="notes" rows="4" placeholder="Hair length, style inspo…"></textarea>
+      <div class="inspo-block">
+        <p class="kicker kicker-left">Style you want</p>
+        <p class="address-note" data-field="inspo-note">
+          Add a photo of the hairstyle you want — a picture from your phone, or one you saved from Google.
+        </p>
+        <div class="inspo-upload" id="inspo-upload">
+          <input id="inspo-photo" class="inspo-file" name="attachment" type="file" accept="image/*" />
+          <label for="inspo-photo" class="inspo-drop">
+            <span class="inspo-drop-title">Add a photo</span>
+            <span class="inspo-drop-hint">Your own picture, a screenshot, or a photo saved from Google</span>
+          </label>
+          <div class="inspo-preview" id="inspo-preview" hidden>
+            <img id="inspo-preview-img" alt="Hairstyle inspiration preview" />
+            <p class="inspo-preview-name" id="inspo-preview-name"></p>
+            <button type="button" class="inspo-remove" id="inspo-remove">Remove photo</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="inspo-url">Or paste a photo link <span class="optional">(optional)</span></label>
+          <input id="inspo-url" name="inspo-url" type="text" inputmode="url" autocomplete="off" placeholder="Paste a Google, Pinterest, or Instagram photo link" />
+          <p class="field-hint">If the look is online, paste the image link here.</p>
+        </div>
+        <div class="field">
+          <label for="notes">Notes <span class="optional">(optional)</span></label>
+          <textarea id="notes" name="notes" rows="4" placeholder="Hair length, color, anything else Tonika should know…"></textarea>
+        </div>
       </div>
       <label class="check">
         <input type="checkbox" id="deposit" name="deposit" required />
@@ -135,6 +158,6 @@
   </div>
 
   <script src="site-content.js?v=5"></script>
-  <script src="script.js?v=12"></script>
+  <script src="script.js?v=13"></script>
 </body>
 </html>
