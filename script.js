@@ -145,7 +145,7 @@ if (dateInput && timeSelect && form) {
     return { day, timeLabel, start };
   }
 
-  function showBooked({ name, service, day, timeLabel, where, instagram, reminderLine, sendNote }) {
+  function showBooked({ name, service, day, timeLabel, where, instagram, reminderLine, sendNote, inspoLine }) {
     successCopy.replaceChildren();
     const line = (cls, text) => {
       const p = document.createElement("p");
@@ -158,12 +158,108 @@ if (dateInput && timeSelect && form) {
     line("booked-service", service);
     if (instagram) line("booked-ig", instagram);
     if (where) line("booked-where", where);
+    if (inspoLine) line("booked-inspo", inspoLine);
     if (reminderLine) line("booked-reminder", reminderLine);
     if (sendNote) line("booked-send-note", sendNote);
     modal.hidden = false;
   }
 
-  function bookingEmailBody(data, day, timeLabel, where) {
+  const MAX_INSPO_BYTES = 8 * 1024 * 1024;
+  const inspoInput = form.querySelector("#inspo-photo");
+  const inspoUpload = form.querySelector("#inspo-upload");
+  const inspoPreview = form.querySelector("#inspo-preview");
+  const inspoPreviewImg = form.querySelector("#inspo-preview-img");
+  const inspoPreviewName = form.querySelector("#inspo-preview-name");
+  const inspoRemove = form.querySelector("#inspo-remove");
+  let inspoObjectUrl = "";
+
+  function clearInspoPhoto() {
+    if (inspoObjectUrl) {
+      URL.revokeObjectURL(inspoObjectUrl);
+      inspoObjectUrl = "";
+    }
+    if (inspoInput) inspoInput.value = "";
+    if (inspoPreviewImg) {
+      inspoPreviewImg.removeAttribute("src");
+      inspoPreviewImg.hidden = true;
+    }
+    if (inspoPreviewName) inspoPreviewName.textContent = "";
+    if (inspoPreview) inspoPreview.hidden = true;
+    inspoUpload?.classList.remove("has-photo");
+  }
+
+  function showInspoPhoto(file) {
+    if (!file) {
+      clearInspoPhoto();
+      return;
+    }
+    if (inspoObjectUrl) URL.revokeObjectURL(inspoObjectUrl);
+    inspoObjectUrl = URL.createObjectURL(file);
+    if (inspoPreviewImg) {
+      inspoPreviewImg.hidden = false;
+      inspoPreviewImg.src = inspoObjectUrl;
+      inspoPreviewImg.onerror = () => {
+        inspoPreviewImg.hidden = true;
+      };
+    }
+    if (inspoPreviewName) inspoPreviewName.textContent = file.name;
+    if (inspoPreview) inspoPreview.hidden = false;
+    inspoUpload?.classList.add("has-photo");
+  }
+
+  function takeInspoFile(file) {
+    if (!file) return false;
+    if (!String(file.type || "").startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "")) {
+      formError.hidden = false;
+      formError.textContent = "Please choose a photo (JPG, PNG, WEBP, or HEIC).";
+      clearInspoPhoto();
+      return false;
+    }
+    if (file.size > MAX_INSPO_BYTES) {
+      formError.hidden = false;
+      formError.textContent = "That photo is too large. Please use an image under 8 MB.";
+      clearInspoPhoto();
+      return false;
+    }
+    formError.hidden = true;
+    showInspoPhoto(file);
+    return true;
+  }
+
+  if (inspoInput) {
+    inspoInput.addEventListener("change", () => {
+      takeInspoFile(inspoInput.files?.[0]);
+    });
+  }
+  if (inspoRemove) {
+    inspoRemove.addEventListener("click", () => {
+      clearInspoPhoto();
+    });
+  }
+  if (inspoUpload) {
+    ["dragenter", "dragover"].forEach((type) => {
+      inspoUpload.addEventListener(type, (event) => {
+        event.preventDefault();
+        inspoUpload.classList.add("is-dragover");
+      });
+    });
+    ["dragleave", "drop"].forEach((type) => {
+      inspoUpload.addEventListener(type, (event) => {
+        event.preventDefault();
+        inspoUpload.classList.remove("is-dragover");
+      });
+    });
+    inspoUpload.addEventListener("drop", (event) => {
+      const file = event.dataTransfer?.files?.[0];
+      if (!file || !inspoInput) return;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      inspoInput.files = transfer.files;
+      takeInspoFile(file);
+    });
+  }
+
+  function bookingEmailBody(data, day, timeLabel, where, photoFile) {
     return [
       "New Styled by Tonika booking",
       "",
@@ -174,6 +270,8 @@ if (dateInput && timeSelect && form) {
       `Service: ${data.service}`,
       `When: ${day} at ${timeLabel}`,
       `Address: ${where || "(none)"}`,
+      `Inspiration photo: ${photoFile?.name || "(none uploaded)"}`,
+      `Inspiration link: ${data["inspo-url"] || "(none)"}`,
       `Notes: ${data.notes || "(none)"}`,
     ].join("\n");
   }
@@ -188,13 +286,13 @@ if (dateInput && timeSelect && form) {
     a.remove();
   }
 
-  async function sendBookingEmail(data, day, timeLabel, where) {
+  async function sendBookingEmail(data, day, timeLabel, where, photoFile) {
     const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
       throw new Error("Bad inbox");
     }
     const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
-    const body = bookingEmailBody(data, day, timeLabel, where);
+    const body = bookingEmailBody(data, day, timeLabel, where, photoFile);
     const fd = new FormData();
     fd.append("name", data.name);
     fd.append("phone", data.phone);
@@ -204,7 +302,9 @@ if (dateInput && timeSelect && form) {
     fd.append("date", day);
     fd.append("time", timeLabel);
     fd.append("address", where);
+    fd.append("inspiration_link", data["inspo-url"] || "(none)");
     fd.append("notes", data.notes || "(none)");
+    if (photoFile) fd.append("attachment", photoFile, photoFile.name);
     fd.append("_subject", subject);
     fd.append("_template", "table");
     fd.append("_replyto", data.email);
@@ -229,6 +329,12 @@ if (dateInput && timeSelect && form) {
     formError.hidden = true;
 
     const data = Object.fromEntries(new FormData(form));
+    const photoFile = inspoInput?.files?.[0] || null;
+    if (photoFile && photoFile.size > MAX_INSPO_BYTES) {
+      formError.hidden = false;
+      formError.textContent = "That photo is too large. Please use an image under 8 MB.";
+      return;
+    }
     if (hoursFor(data.date) == null) {
       formError.hidden = false;
       formError.textContent = "Sorry — we’re only open Saturday and Sunday. Please pick a weekend date.";
@@ -255,7 +361,7 @@ if (dateInput && timeSelect && form) {
 
     let sent;
     try {
-      sent = await sendBookingEmail(data, day, timeLabel, where);
+      sent = await sendBookingEmail(data, day, timeLabel, where, photoFile);
     } catch {
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
@@ -305,14 +411,30 @@ if (dateInput && timeSelect && form) {
 
     const sendNote =
       sent?.via === "mailto"
-        ? "An email to Tonika should have opened. Tap Send if you see it — that’s how this request reaches her inbox."
+        ? photoFile
+          ? "An email to Tonika should have opened. Tap Send if you see it. The photo couldn’t be attached this way — add the image in that email if you can."
+          : "An email to Tonika should have opened. Tap Send if you see it — that’s how this request reaches her inbox."
         : "";
-    showBooked({ name: data.name, service: data.service, day, timeLabel, where, instagram: data.instagram, reminderLine, sendNote });
+    const inspoParts = [];
+    if (photoFile) inspoParts.push("Inspiration photo sent.");
+    if (data["inspo-url"]) inspoParts.push("Inspiration link sent.");
+    showBooked({
+      name: data.name,
+      service: data.service,
+      day,
+      timeLabel,
+      where,
+      instagram: data.instagram,
+      reminderLine,
+      sendNote,
+      inspoLine: inspoParts.join(" "),
+    });
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = "Request Appointment";
     }
     form.reset();
+    clearInspoPhoto();
     const remindBox = document.querySelector("#sms-reminder");
     if (remindBox) remindBox.checked = true;
     const province = document.querySelector("#province");
