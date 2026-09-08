@@ -1,16 +1,21 @@
 /**
- * Text reminders for Styled by Tonika bookings.
- * Sends the client a text 3 hours before their appointment.
+ * Booked-slot calendar + text reminders for Styled by Tonika.
  *
- * Deploy (one-time):
+ * Deploy:
  *   npx wrangler deploy
  *   npx wrangler secret put TWILIO_ACCOUNT_SID
  *   npx wrangler secret put TWILIO_AUTH_TOKEN
  *   npx wrangler secret put TWILIO_MESSAGING_SERVICE_SID
  *
- * Then paste the worker URL into content.json as smsWebhook and Publish.
+ * GET  ?slots=1          → { taken: ["2026-09-12|09:00"] }
+ * POST { action:"claim", date, time }   → hold a 3-hour block
+ * POST { action:"release", date, time } → free a block if the email failed
+ * POST { name, phone, date, time }      → schedule the SMS reminder
  */
 const TZ = "America/Vancouver";
+const SLOT_HOURS = 3;
+const SLOT_START = 9;
+const SLOT_END = 17;
 const ALLOWED = new Set([
   "https://styledbytonika.ca",
   "https://www.styledbytonika.ca",
@@ -18,11 +23,21 @@ const ALLOWED = new Set([
   "http://localhost:5173",
 ]);
 
+function allowOrigin(origin) {
+  if (ALLOWED.has(origin)) return origin;
+  try {
+    const u = new URL(origin);
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return origin;
+  } catch {
+    /* keep default */
+  }
+  return "https://styledbytonika.ca";
+}
+
 function corsHeaders(origin) {
-  const allow = ALLOWED.has(origin) ? origin : "https://styledbytonika.ca";
   return {
-    "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Origin": allowOrigin(origin),
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
   };
@@ -92,6 +107,95 @@ function cleanName(name) {
     .slice(0, 40);
 }
 
+function slotKey(dateStr, timeValue) {
+  const clock = parseClock(timeValue);
+  if (!clock) return "";
+  return `${dateStr}|${String(clock.h).padStart(2, "0")}:${String(clock.min).padStart(2, "0")}`;
+}
+
+function isValidSlot(dateStr, timeValue) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const weekday = new Date(`${dateStr}T12:00:00`).getDay();
+  if (weekday !== 0 && weekday !== 6) return false;
+  const clock = parseClock(timeValue);
+  if (!clock || clock.min !== 0) return false;
+  if (clock.h < SLOT_START || clock.h >= SLOT_END) return false;
+  return (clock.h - SLOT_START) % SLOT_HOURS === 0;
+}
+
+function todayStamp() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
+function calendarStub(env) {
+  if (!env.CALENDAR) return null;
+  return env.CALENDAR.get(env.CALENDAR.idFromName("bookings"));
+}
+
+export class BookingCalendar {
+  constructor(state) {
+    this.state = state;
+  }
+
+  async fetch(req) {
+    let payload = {};
+    try {
+      payload = await req.json();
+    } catch {
+      payload = {};
+    }
+    const action = String(payload.action || "list");
+    const today = todayStamp();
+
+    if (action === "list") {
+      const taken = [];
+      const all = await this.state.storage.list();
+      for (const key of all.keys()) {
+        const date = String(key).split("|")[0];
+        if (date < today) {
+          await this.state.storage.delete(key);
+          continue;
+        }
+        taken.push(key);
+      }
+      return Response.json({ ok: true, taken });
+    }
+
+    const key = slotKey(payload.date, payload.time);
+    if (!key || !isValidSlot(payload.date, payload.time)) {
+      return Response.json({ ok: false, error: "That is not an open 3-hour time." }, { status: 400 });
+    }
+
+    if (action === "claim") {
+      const existing = await this.state.storage.get(key);
+      if (existing) {
+        return Response.json({ ok: false, error: "taken" }, { status: 409 });
+      }
+      await this.state.storage.put(key, { at: Date.now() });
+      return Response.json({ ok: true, key });
+    }
+
+    if (action === "release") {
+      await this.state.storage.delete(key);
+      return Response.json({ ok: true, key });
+    }
+
+    return Response.json({ ok: false, error: "Unknown action" }, { status: 400 });
+  }
+}
+
+async function calendarAction(env, payload) {
+  const stub = calendarStub(env);
+  if (!stub) return { ok: false, error: "Calendar is not configured", status: 503 };
+  const res = await stub.fetch("https://calendar/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const out = await res.json().catch(() => ({}));
+  return { ...out, status: res.status };
+}
+
 async function twilioSend(env, fields) {
   const params = new URLSearchParams(fields);
   const res = await fetch(
@@ -118,6 +222,17 @@ export default {
     if (req.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
+
+    if (req.method === "GET") {
+      const url = new URL(req.url);
+      if (url.searchParams.has("slots")) {
+        const out = await calendarAction(env, { action: "list" });
+        if (out.status === 503) return json(origin, { ok: true, taken: [] });
+        return json(origin, { ok: true, taken: out.taken || [] }, out.status || 200);
+      }
+      return json(origin, { error: "GET slots only" }, 400);
+    }
+
     if (req.method !== "POST") return json(origin, { error: "POST only" }, 405);
 
     let payload;
@@ -125,6 +240,14 @@ export default {
       payload = await req.json();
     } catch {
       return json(origin, { error: "Invalid JSON" }, 400);
+    }
+
+    const action = String(payload.action || "");
+    if (action === "claim" || action === "release" || action === "list") {
+      const out = await calendarAction(env, payload);
+      const status = out.status || 200;
+      const { status: _s, ...body } = out;
+      return json(origin, body, status);
     }
 
     const name = cleanName(payload.name);
