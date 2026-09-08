@@ -164,102 +164,153 @@ if (dateInput && timeSelect && form) {
     modal.hidden = false;
   }
 
-  const MAX_INSPO_BYTES = 8 * 1024 * 1024;
-  const inspoInput = form.querySelector("#inspo-photo");
-  const inspoUpload = form.querySelector("#inspo-upload");
-  const inspoPreview = form.querySelector("#inspo-preview");
-  const inspoPreviewImg = form.querySelector("#inspo-preview-img");
-  const inspoPreviewName = form.querySelector("#inspo-preview-name");
-  const inspoRemove = form.querySelector("#inspo-remove");
-  let inspoObjectUrl = "";
+  const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
+  const MEDIA_TYPE_OK = /^(image|video)\//i;
+  const MEDIA_EXT_OK = /\.(jpe?g|png|webp|gif|heic|heif|mp4|mov|m4v|webm|3gp|hevc)$/i;
 
-  function clearInspoPhoto() {
-    if (inspoObjectUrl) {
-      URL.revokeObjectURL(inspoObjectUrl);
-      inspoObjectUrl = "";
-    }
-    if (inspoInput) inspoInput.value = "";
-    if (inspoPreviewImg) {
-      inspoPreviewImg.removeAttribute("src");
-      inspoPreviewImg.hidden = true;
-    }
-    if (inspoPreviewName) inspoPreviewName.textContent = "";
-    if (inspoPreview) inspoPreview.hidden = true;
-    inspoUpload?.classList.remove("has-photo");
+  function isVideoFile(file) {
+    return String(file?.type || "").startsWith("video/") || /\.(mp4|mov|m4v|webm|3gp|hevc)$/i.test(file?.name || "");
   }
 
-  function showInspoPhoto(file) {
-    if (!file) {
-      clearInspoPhoto();
-      return;
-    }
-    if (inspoObjectUrl) URL.revokeObjectURL(inspoObjectUrl);
-    inspoObjectUrl = URL.createObjectURL(file);
-    if (inspoPreviewImg) {
-      inspoPreviewImg.hidden = false;
-      inspoPreviewImg.src = inspoObjectUrl;
-      inspoPreviewImg.onerror = () => {
-        inspoPreviewImg.hidden = true;
-      };
-    }
-    if (inspoPreviewName) inspoPreviewName.textContent = file.name;
-    if (inspoPreview) inspoPreview.hidden = false;
-    inspoUpload?.classList.add("has-photo");
+  function mediaKind(file) {
+    return isVideoFile(file) ? "video" : "photo";
   }
 
-  function takeInspoFile(file) {
-    if (!file) return false;
-    if (!String(file.type || "").startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "")) {
-      formError.hidden = false;
-      formError.textContent = "Please choose a photo (JPG, PNG, WEBP, or HEIC).";
-      clearInspoPhoto();
-      return false;
-    }
-    if (file.size > MAX_INSPO_BYTES) {
-      formError.hidden = false;
-      formError.textContent = "That photo is too large. Please use an image under 8 MB.";
-      clearInspoPhoto();
-      return false;
-    }
-    formError.hidden = true;
-    showInspoPhoto(file);
-    return true;
-  }
+  function bindMediaPicker({ input, upload, preview, previewImg, previewVideo, previewName, removeBtn }) {
+    let objectUrl = "";
 
-  if (inspoInput) {
-    inspoInput.addEventListener("change", () => {
-      takeInspoFile(inspoInput.files?.[0]);
-    });
-  }
-  if (inspoRemove) {
-    inspoRemove.addEventListener("click", () => {
-      clearInspoPhoto();
-    });
-  }
-  if (inspoUpload) {
-    ["dragenter", "dragover"].forEach((type) => {
-      inspoUpload.addEventListener(type, (event) => {
-        event.preventDefault();
-        inspoUpload.classList.add("is-dragover");
+    function clear() {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = "";
+      }
+      if (input) input.value = "";
+      if (previewImg) {
+        previewImg.removeAttribute("src");
+        previewImg.hidden = true;
+      }
+      if (previewVideo) {
+        previewVideo.pause();
+        previewVideo.removeAttribute("src");
+        previewVideo.load();
+        previewVideo.hidden = true;
+      }
+      if (previewName) previewName.textContent = "";
+      if (preview) preview.hidden = true;
+      upload?.classList.remove("has-file");
+    }
+
+    function show(file) {
+      if (!file) {
+        clear();
+        return;
+      }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(file);
+      const video = isVideoFile(file);
+      if (video && previewVideo) {
+        if (previewImg) {
+          previewImg.removeAttribute("src");
+          previewImg.hidden = true;
+        }
+        previewVideo.hidden = false;
+        previewVideo.src = objectUrl;
+      } else if (previewImg) {
+        if (previewVideo) {
+          previewVideo.pause();
+          previewVideo.removeAttribute("src");
+          previewVideo.load();
+          previewVideo.hidden = true;
+        }
+        previewImg.hidden = false;
+        previewImg.src = objectUrl;
+        previewImg.onerror = () => {
+          previewImg.hidden = true;
+        };
+      }
+      if (previewName) previewName.textContent = file.name;
+      if (preview) preview.hidden = false;
+      upload?.classList.add("has-file");
+    }
+
+    function take(file) {
+      if (!file) return false;
+      if (!MEDIA_TYPE_OK.test(file.type || "") && !MEDIA_EXT_OK.test(file.name || "")) {
+        formError.hidden = false;
+        formError.textContent = "Please choose a photo or video (JPG, PNG, HEIC, MP4, or MOV).";
+        clear();
+        return false;
+      }
+      if (file.size > MAX_MEDIA_BYTES) {
+        formError.hidden = false;
+        formError.textContent = "That file is too large. Please use a photo or a short clip under 10 MB.";
+        clear();
+        return false;
+      }
+      formError.hidden = true;
+      show(file);
+      return true;
+    }
+
+    if (input) {
+      input.addEventListener("change", () => {
+        take(input.files?.[0]);
       });
-    });
-    ["dragleave", "drop"].forEach((type) => {
-      inspoUpload.addEventListener(type, (event) => {
-        event.preventDefault();
-        inspoUpload.classList.remove("is-dragover");
+    }
+    if (removeBtn) {
+      removeBtn.addEventListener("click", () => {
+        clear();
       });
-    });
-    inspoUpload.addEventListener("drop", (event) => {
-      const file = event.dataTransfer?.files?.[0];
-      if (!file || !inspoInput) return;
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      inspoInput.files = transfer.files;
-      takeInspoFile(file);
-    });
+    }
+    if (upload) {
+      ["dragenter", "dragover"].forEach((type) => {
+        upload.addEventListener(type, (event) => {
+          event.preventDefault();
+          upload.classList.add("is-dragover");
+        });
+      });
+      ["dragleave", "drop"].forEach((type) => {
+        upload.addEventListener(type, (event) => {
+          event.preventDefault();
+          upload.classList.remove("is-dragover");
+        });
+      });
+      upload.addEventListener("drop", (event) => {
+        const file = event.dataTransfer?.files?.[0];
+        if (!file || !input) return;
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        input.files = transfer.files;
+        take(file);
+      });
+    }
+
+    return {
+      clear,
+      file: () => input?.files?.[0] || null,
+    };
   }
 
-  function bookingEmailBody(data, day, timeLabel, where, photoFile) {
+  const hairPicker = bindMediaPicker({
+    input: form.querySelector("#hair-media"),
+    upload: form.querySelector("#hair-upload"),
+    preview: form.querySelector("#hair-preview"),
+    previewImg: form.querySelector("#hair-preview-img"),
+    previewVideo: form.querySelector("#hair-preview-video"),
+    previewName: form.querySelector("#hair-preview-name"),
+    removeBtn: form.querySelector("#hair-remove"),
+  });
+  const inspoPicker = bindMediaPicker({
+    input: form.querySelector("#inspo-photo"),
+    upload: form.querySelector("#inspo-upload"),
+    preview: form.querySelector("#inspo-preview"),
+    previewImg: form.querySelector("#inspo-preview-img"),
+    previewVideo: form.querySelector("#inspo-preview-video"),
+    previewName: form.querySelector("#inspo-preview-name"),
+    removeBtn: form.querySelector("#inspo-remove"),
+  });
+
+  function bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile) {
     return [
       "New Styled by Tonika booking",
       "",
@@ -270,7 +321,8 @@ if (dateInput && timeSelect && form) {
       `Service: ${data.service}`,
       `When: ${day} at ${timeLabel}`,
       `Address: ${where || "(none)"}`,
-      `Inspiration photo: ${photoFile?.name || "(none uploaded)"}`,
+      `Current hair ${hairFile ? mediaKind(hairFile) : "photo/video"}: ${hairFile?.name || "(none uploaded)"}`,
+      `Inspiration ${inspoFile ? mediaKind(inspoFile) : "photo/video"}: ${inspoFile?.name || "(none uploaded)"}`,
       `Inspiration link: ${data["inspo-url"] || "(none)"}`,
       `Notes: ${data.notes || "(none)"}`,
     ].join("\n");
