@@ -4,6 +4,9 @@ compatibility_date = "2026-09-01"
 
 [vars]
 REMINDER_HOURS = "3"
+GITHUB_OWNER = "jeremiahcox1717-a11y"
+GITHUB_REPO = "styledbytonika"
+GITHUB_BRANCH = "main"
 
 [[durable_objects.bindings]]
 name = "CALENDAR"

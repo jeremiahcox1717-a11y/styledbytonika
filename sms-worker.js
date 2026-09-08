@@ -227,6 +227,39 @@ async function cacheCalendar(payload) {
   return { ok: false, error: "Unknown action", status: 400 };
 }
 
+async function writeGithubBookings(env, taken) {
+  const token = env.GITHUB_TOKEN;
+  if (!token) return;
+  const owner = env.GITHUB_OWNER || "jeremiahcox1717-a11y";
+  const repo = env.GITHUB_REPO || "styledbytonika";
+  const branch = env.GITHUB_BRANCH || "main";
+  const api = `https://api.github.com/repos/${owner}/${repo}/contents/bookings.json`;
+  try {
+    const current = await fetch(`${api}?ref=${branch}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    });
+    if (!current.ok) return;
+    const meta = await current.json();
+    const body = `${JSON.stringify({ taken }, null, 2)}\n`;
+    await fetch(api, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Hold booked appointment slot",
+        content: btoa(unescape(encodeURIComponent(body))),
+        sha: meta.sha,
+        branch,
+      }),
+    });
+  } catch {
+    /* calendar still holds the slot */
+  }
+}
+
 async function githubTaken() {
   try {
     const res = await fetch(
@@ -260,6 +293,10 @@ async function calendarAction(env, payload) {
     const extra = await githubTaken();
     const taken = [...new Set([...(out.taken || []), ...extra])];
     return { ok: true, taken, status: 200 };
+  }
+  if (out?.ok && payload.action === "claim") {
+    const listed = await calendarAction(env, { action: "list" });
+    await writeGithubBookings(env, listed.taken || out.taken || []);
   }
   return out;
 }
@@ -295,8 +332,7 @@ export default {
       const url = new URL(req.url);
       if (url.searchParams.has("slots")) {
         const out = await calendarAction(env, { action: "list" });
-        if (out.status === 503) return json(origin, { ok: true, taken: [] });
-        return json(origin, { ok: true, taken: out.taken || [] }, out.status || 200);
+        return json(origin, { ok: true, taken: out.taken || [] }, out.status && out.status !== 503 ? out.status : 200);
       }
       return json(origin, { error: "GET slots only" }, 400);
     }
