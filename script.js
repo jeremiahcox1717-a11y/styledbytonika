@@ -23,11 +23,6 @@ if (dateInput && timeSelect && form) {
     return `${d.getFullYear()}-${month}-${day}`;
   };
 
-  function slotHours() {
-    const n = Number(window.__SITE__?.slotHours);
-    return n > 0 ? n : 3;
-  }
-
   function clockValue(h, min = 0) {
     return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
   }
@@ -142,6 +137,10 @@ if (dateInput && timeSelect && form) {
           8000
         );
         if (res.status === 409 || out.error === "taken") return { ok: false, taken: true, key };
+        if (res.status === 400) {
+          rememberTaken(key);
+          return { ok: true, via: "local", key };
+        }
         if (!res.ok || out.ok === false) return { ok: false, taken: false, key };
         rememberTaken(key);
         return { ok: true, via: "live", key };
@@ -240,6 +239,28 @@ if (dateInput && timeSelect && form) {
 
   fillWeekendDates();
 
+  function blockedWindows() {
+    return Array.isArray(window.__SITE__?.blocked) ? window.__SITE__.blocked : [];
+  }
+
+  function weekdayName(dateStr) {
+    const day = new Date(`${dateStr}T12:00:00`).getDay();
+    if (day === 6) return "saturday";
+    if (day === 0) return "sunday";
+    return "";
+  }
+
+  function hourIsBlocked(dateStr, h) {
+    return blockedWindows().some((block) => {
+      const start = Number(block.start);
+      const end = Number(block.end);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || h < start || h >= end) return false;
+      if (block.date) return String(block.date) === dateStr;
+      const day = String(block.weekday || "").toLowerCase();
+      return day && day === weekdayName(dateStr);
+    });
+  }
+
   function hoursFor(dateStr) {
     const day = new Date(`${dateStr}T12:00:00`).getDay();
     const site = window.__SITE__;
@@ -258,10 +279,10 @@ if (dateInput && timeSelect && form) {
     const hours = hoursFor(dateStr);
     const clock = parseClock(timeValue);
     if (!hours || !clock) return false;
-    const span = slotHours();
     if (clock.min !== 0) return false;
     if (clock.h < hours.start || clock.h >= hours.end) return false;
-    return (clock.h - hours.start) % span === 0;
+    if (hourIsBlocked(dateStr, clock.h)) return false;
+    return true;
   }
 
   function timeLabelAt(h, min = 0) {
@@ -287,16 +308,15 @@ if (dateInput && timeSelect && form) {
     await loadTaken();
     if (gen !== timesGen) return;
 
-    const span = slotHours();
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
     let openCount = 0;
-    for (let h = hours.start; h < hours.end; h += span) {
+    for (let h = hours.start; h < hours.end; h += 1) {
       const value = clockValue(h);
       const key = `${dateInput.value}|${value}`;
-      if (slotHasPassed(dateInput.value, h, 0) || takenSlots.has(key)) continue;
+      if (slotHasPassed(dateInput.value, h, 0) || takenSlots.has(key) || hourIsBlocked(dateInput.value, h)) continue;
       const opt = document.createElement("option");
       opt.value = value;
-      opt.textContent = `${timeLabelAt(h)} – ${timeLabelAt(h + span)}`;
+      opt.textContent = timeLabelAt(h);
       timeSelect.appendChild(opt);
       openCount += 1;
     }
@@ -798,7 +818,7 @@ if (dateInput && timeSelect && form) {
     }
     if (!isOpenSlot(data.date, data.time)) {
       formError.hidden = false;
-      formError.textContent = "Please pick a 3-hour time (9:00 AM, 12:00 PM, or 3:00 PM).";
+      formError.textContent = "Please pick a start time that’s still open.";
       fillTimes();
       return;
     }

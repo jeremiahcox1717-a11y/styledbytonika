@@ -34,6 +34,7 @@ function addBot(text) {
 async function loadContent() {
   const res = await fetch(`content.json?ts=${Date.now()}`);
   siteContent = await res.json();
+  if (!Array.isArray(siteContent.blocked)) siteContent.blocked = [];
   if (smsWebhookInput) smsWebhookInput.value = siteContent.smsWebhook || "";
 }
 
@@ -46,6 +47,8 @@ function applyLocalEdit(message, content) {
   const text = message.toLowerCase();
   let changed = false;
   const timeMatch = message.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  const isBlockCmd = /\b(remove|block|close|hold|unavailable|take off|take out)\b/.test(text);
+  const isUnblockCmd = /\b(unblock|un-block|put back|restore|reopen|open back|available again)\b/.test(text);
 
   function fmt(h, m, ap) {
     let hour = Number(h);
@@ -60,7 +63,95 @@ function applyLocalEdit(message, content) {
     };
   }
 
-  if (timeMatch && /saturday|sat\b/.test(text)) {
+  function hourFrom(h, min, ap, otherHour, isEnd) {
+    let hour = Number(h);
+    const mer = (ap || "").toUpperCase();
+    if (mer === "PM" && hour < 12) hour += 12;
+    else if (mer === "AM" && hour === 12) hour = 0;
+    else if (!mer && isEnd && hour > 0 && hour < 12 && hour <= Number(otherHour)) hour += 12;
+    return hour;
+  }
+
+  function weekdayFrom(raw) {
+    if (/saturday|sat\b/.test(raw)) return "saturday";
+    if (/sunday|sun\b/.test(raw)) return "sunday";
+    return "";
+  }
+
+  function nextDateFor(weekday) {
+    const want = weekday === "sunday" ? 0 : 6;
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Vancouver" }));
+    const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    for (let i = 0; i < 16; i += 1) {
+      if (cursor.getDay() === want) {
+        const month = String(cursor.getMonth() + 1).padStart(2, "0");
+        const day = String(cursor.getDate()).padStart(2, "0");
+        return `${cursor.getFullYear()}-${month}-${day}`;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return "";
+  }
+
+  function dateFromMessage(raw) {
+    const iso = raw.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+    if (iso) return iso[1];
+    const named = raw.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s*(20\d{2}))?\b/i);
+    if (named) {
+      const months = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+      };
+      const year = Number(named[3] || new Date().getFullYear());
+      const d = new Date(year, months[named[1].toLowerCase()], Number(named[2]), 12);
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${d.getFullYear()}-${month}-${day}`;
+    }
+    if (/\bthis saturday\b|\bnext saturday\b/.test(raw)) return nextDateFor("saturday");
+    if (/\bthis sunday\b|\bnext sunday\b/.test(raw)) return nextDateFor("sunday");
+    return "";
+  }
+
+  function clockLabel(hour) {
+    const d = new Date(`2026-01-01T${String(hour).padStart(2, "0")}:00:00`);
+    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+
+  if (timeMatch && (isBlockCmd || isUnblockCmd)) {
+    if (!Array.isArray(next.blocked)) next.blocked = [];
+    const startHour = hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false);
+    const endHour = hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true);
+    const weekday = weekdayFrom(text);
+    const date = dateFromMessage(text) || (!/\bevery\b/.test(text) && weekday ? nextDateFor(weekday) : "");
+    const sameBlock = (block) =>
+      Number(block.start) === startHour &&
+      Number(block.end) === endHour &&
+      (date ? block.date === date : String(block.weekday || "") === weekday);
+    if (isUnblockCmd) {
+      const before = next.blocked.length;
+      next.blocked = next.blocked.filter((block) => !sameBlock(block));
+      if (next.blocked.length !== before) changed = true;
+    } else if (entryValid(date, weekday, startHour, endHour)) {
+      const entry = {
+        start: startHour,
+        end: endHour,
+        label: `${clockLabel(startHour)} – ${clockLabel(endHour)}`,
+      };
+      if (date) entry.date = date;
+      else if (weekday) entry.weekday = weekday;
+      if (!next.blocked.some(sameBlock)) {
+        next.blocked.push(entry);
+        changed = true;
+      }
+    }
+  }
+
+  function entryValid(date, weekday, startHour, endHour) {
+    return (date || weekday) && Number.isFinite(startHour) && Number.isFinite(endHour) && endHour > startHour;
+  }
+
+  if (timeMatch && /saturday|sat\b/.test(text) && !isBlockCmd && !isUnblockCmd) {
     const start = fmt(timeMatch[1], timeMatch[2], timeMatch[3] || "AM");
     const end = fmt(timeMatch[4], timeMatch[5], timeMatch[6] || "PM");
     next.hours.saturday.text = `${start.label} – ${end.label}`;
@@ -68,7 +159,7 @@ function applyLocalEdit(message, content) {
     next.hours.saturday.end = end.hour;
     changed = true;
   }
-  if (timeMatch && /sunday|sun\b/.test(text)) {
+  if (timeMatch && /sunday|sun\b/.test(text) && !isBlockCmd && !isUnblockCmd) {
     const start = fmt(timeMatch[1], timeMatch[2], timeMatch[3] || "AM");
     const end = fmt(timeMatch[4], timeMatch[5], timeMatch[6] || "PM");
     next.hours.sunday.text = `${start.label} – ${end.label}`;
@@ -125,6 +216,12 @@ async function askGemini(message, content) {
   const prompt = `You edit the Styled by Tonika booking website content.
 Return ONLY JSON: {"reply":"short confirmation","content":{...full updated content object...}}
 Keep the same keys. Do not remove keys. Do not invent photos.
+Appointments last 2 to 5 hours. Clients pick an hourly start time during Saturday/Sunday hours. The owner blocks the actual window after they know the length.
+blocked is an array of closed windows clients cannot book. Do not change hours.saturday / hours.sunday unless they ask to change open hours.
+Each blocked item: {"date":"YYYY-MM-DD","start":9,"end":13,"label":"9:00 AM – 1:00 PM"} or {"weekday":"saturday","start":9,"end":13,"label":"9:00 AM – 1:00 PM"}.
+start and end are 24-hour integers. end is exclusive, so 9-1pm is start 9, end 13.
+"Remove 9-1 from Saturday booking" ADDS a blocked window (use the next Saturday date unless they say every Saturday).
+"Put 9-1 back" or "unblock Saturday 9-1" REMOVES matching blocked windows.
 Current content:
 ${JSON.stringify(content, null, 2)}
 Owner request:
@@ -184,7 +281,7 @@ async function githubPut(path, text, message) {
   }
 }
 
-addBot("You're in. Tell me what to change on the booking site, then hit Publish to live site.");
+addBot("You're in. After you know how long a visit will run, tell me to take that window off the booking page — like “remove 9-1 from Saturday booking.” Then hit Publish to live site.");
 loadContent();
 
 document.querySelector("#lock-btn").addEventListener("click", () => {
@@ -230,7 +327,7 @@ chatForm.addEventListener("submit", async (event) => {
       next = applyLocalEdit(message, siteContent);
       reply = next
         ? "Updated the draft. Click Publish to live site so customers see it."
-        : "I could not tell what to change. Add a Gemini API key for fuller edits, or try “Saturday 9am to 5pm”, “phone (252) 555-0100”, or “add knotless braids”.";
+        : "I could not tell what to change. Add a Gemini API key for fuller edits, or try “remove 9-1 from Saturday booking”, “Saturday 9am to 5pm”, or “add knotless braids”.";
     }
     pending.textContent = reply;
     if (next) siteContent = next;

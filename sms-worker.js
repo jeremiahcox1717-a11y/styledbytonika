@@ -10,16 +10,15 @@
  * GET  ?slots=1          → { taken: ["2026-09-12|09:00"] }
  * GET  /booking/:id      → HTML recap with photos
  * GET  /media/:id        → current-hair / inspiration image
- * POST { action:"claim", date, time, name }   → hold a 3-hour block
- * POST { action:"release", date, time } → free a block if the email failed
+ * POST { action:"claim", date, time, name }   → hold a start time
+ * POST { action:"release", date, time } → free a start time if the email failed
  * POST { action:"cancel", name } → free slots booked under that name
  * POST { action:"notify", ...photos } → send the owner a booking email
  * POST { name, phone, date, time }      → schedule the SMS reminder
  */
 const TZ = "America/Vancouver";
-const SLOT_HOURS = 3;
-const SLOT_START = 9;
-const SLOT_END = 17;
+const SLOT_START = 8;
+const SLOT_END = 21;
 const ALLOWED = new Set([
   "https://styledbytonika.ca",
   "https://www.styledbytonika.ca",
@@ -125,7 +124,7 @@ function isValidSlot(dateStr, timeValue) {
   const clock = parseClock(timeValue);
   if (!clock || clock.min !== 0) return false;
   if (clock.h < SLOT_START || clock.h >= SLOT_END) return false;
-  return (clock.h - SLOT_START) % SLOT_HOURS === 0;
+  return true;
 }
 
 function todayStamp() {
@@ -235,7 +234,7 @@ export class BookingCalendar {
 
     const key = slotKey(payload.date, payload.time);
     if (!key || !isValidSlot(payload.date, payload.time)) {
-      return Response.json({ ok: false, error: "That is not an open 3-hour time." }, { status: 400 });
+      return Response.json({ ok: false, error: "That is not an open booking time." }, { status: 400 });
     }
 
     if (action === "claim") {
@@ -291,7 +290,7 @@ async function cacheCalendar(payload) {
 
   const key = slotKey(payload.date, payload.time);
   if (!key || !isValidSlot(payload.date, payload.time)) {
-    return { ok: false, error: "That is not an open 3-hour time.", status: 400 };
+    return { ok: false, error: "That is not an open booking time.", status: 400 };
   }
 
   if (action === "claim") {
