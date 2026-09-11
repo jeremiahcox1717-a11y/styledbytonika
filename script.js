@@ -7,6 +7,11 @@ const successCopy = document.querySelector("#success-copy");
 
 if (dateInput && timeSelect && form) {
   const TZ = "America/Vancouver";
+  try {
+    localStorage.removeItem("sbt-taken-slots");
+  } catch {
+    /* ignore */
+  }
   const LOCAL_TAKEN_KEY = "sbt-taken-slots-v2";
   const takenSlots = new Set();
   let liveCalendar = "";

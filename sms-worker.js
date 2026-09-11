@@ -8,8 +8,12 @@
  *   npx wrangler secret put TWILIO_MESSAGING_SERVICE_SID
  *
  * GET  ?slots=1          → { taken: ["2026-09-12|09:00"] }
- * POST { action:"claim", date, time }   → hold a 3-hour block
+ * GET  /booking/:id      → HTML recap with photos
+ * GET  /media/:id        → current-hair / inspiration image
+ * POST { action:"claim", date, time, name }   → hold a 3-hour block
  * POST { action:"release", date, time } → free a block if the email failed
+ * POST { action:"cancel", name } → free slots booked under that name
+ * POST { action:"notify", ...photos } → send the owner a booking email
  * POST { name, phone, date, time }      → schedule the SMS reminder
  */
 const TZ = "America/Vancouver";
