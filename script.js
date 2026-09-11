@@ -23,6 +23,11 @@ if (dateInput && timeSelect && form) {
     return `${d.getFullYear()}-${month}-${day}`;
   };
 
+  function slotHours() {
+    const n = Number(window.__SITE__?.slotHours);
+    return n > 0 ? n : 1;
+  }
+
   const HOLD_HOURS = 2;
 
   function clockValue(h, min = 0) {
@@ -292,9 +297,13 @@ if (dateInput && timeSelect && form) {
   }
 
   function isOpenSlot(dateStr, timeValue) {
+    const hours = hoursFor(dateStr);
     const clock = parseClock(timeValue);
-    if (!clock || clock.min !== 0) return false;
+    const span = slotHours();
+    if (!hours || !clock) return false;
+    if (clock.min !== 0) return false;
     if (slotHasPassed(dateStr, clock.h, clock.min)) return false;
+    if ((clock.h - hours.start) % span !== 0) return false;
     return holdFits(dateStr, clock.h);
   }
 
@@ -321,13 +330,14 @@ if (dateInput && timeSelect && form) {
     await loadTaken();
     if (gen !== timesGen) return;
 
+    const span = slotHours();
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
     let openCount = 0;
-    for (let h = hours.start; h < hours.end; h += 1) {
+    for (let h = hours.start; h < hours.end; h += span) {
       if (slotHasPassed(dateInput.value, h, 0) || !holdFits(dateInput.value, h)) continue;
       const opt = document.createElement("option");
       opt.value = clockValue(h);
-      opt.textContent = timeLabelAt(h);
+      opt.textContent = span > 1 ? `${timeLabelAt(h)} – ${timeLabelAt(h + span - 1)}` : timeLabelAt(h);
       timeSelect.appendChild(opt);
       openCount += 1;
     }

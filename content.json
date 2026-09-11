@@ -41,16 +41,17 @@
     "Feed in cornrows",
     ""
   ],
-  "bookLede": "Saturday and Sunday 9:00 AM – 5:00 PM. Pick a start time that’s open. A non-refundable $25 deposit holds your spot and goes toward your balance. Remaining balance is cash only.",
+  "bookLede": "Saturday and Sunday 9:00 AM – 5:00 PM. Appointments usually run 2 to 5 hours. Pick a start time that’s open. A non-refundable $25 deposit holds your spot and goes toward your balance. Remaining balance is cash only.",
   "addressNote": "Mobile service in British Columbia — enter the address for your appointment. A travel fee may apply depending on location.",
   "hairNote": "Add a photo or short video of your current hair length so Tonika can see if it’s long enough for the style you want.",
   "inspoNote": "Add a photo or video of the hairstyle you want — from your phone, a screenshot, or something you saved from Google.",
   "thanksNote": "Pick your service, and get ready to shine!",
   "reminderHours": 3,
   "reminderNote": "Text me a reminder 3 hours before my appointment with the day and time.",
-  "timeHint": "Pick a start time during Saturday or Sunday hours.",
+  "timeHint": "Appointments usually run 2 to 5 hours. Pick a start time during Saturday or Sunday hours. If 9:00 AM is taken, the next start is 12:00 PM.",
   "slotHours": 1,
   "blocked": [],
   "bookingApi": "https://styledbytonika-sms.workers.dev",
   "smsWebhook": ""
 }
+
