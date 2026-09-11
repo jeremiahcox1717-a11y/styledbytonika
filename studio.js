@@ -460,10 +460,13 @@ chatForm.addEventListener("submit", async (event) => {
       }
     }
     if (!next) {
-      next = applyLocalEdit(message, siteContent);
-      if (next) {
-        reply = reply || "Updated the draft. Click Publish so customers see it.";
-      } else if (!reply) {
+      const alreadyAnswered = Boolean(reply);
+      const looksLikeQuestion = /\?/.test(message) || /^(what|who|when|where|how|why|do |is |are |can |does |tell me)\b/i.test(message.trim());
+      if (!(alreadyAnswered && looksLikeQuestion)) {
+        next = applyLocalEdit(message, siteContent);
+        if (next) reply = reply || "Updated the draft. Click Publish so customers see it.";
+      }
+      if (!next && !reply) {
         reply = answerLocal(message, siteContent) || "Ask me anything about the site, or tell me what you want to change.";
       }
     }
