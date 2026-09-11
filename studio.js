@@ -342,7 +342,7 @@ async function githubPut(path, text, message) {
   }
 }
 
-addBot("You’re in. A new request already holds two hours. After you confirm the style, tell me the real window — like “Saturday 9 to 1” — then Publish.");
+addBot("You’re in. A new booking already holds two hours. After you confirm the style, type Saturday 9 to 1, then Publish.");
 loadContent();
 
 document.querySelector("#lock-btn").addEventListener("click", () => {
