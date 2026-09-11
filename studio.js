@@ -36,6 +36,37 @@ async function loadContent() {
   siteContent = await res.json();
   if (!Array.isArray(siteContent.blocked)) siteContent.blocked = [];
   if (smsWebhookInput) smsWebhookInput.value = siteContent.smsWebhook || "";
+  renderSchedule();
+}
+
+function clockFace(hour) {
+  const d = new Date(`2026-01-01T${String(hour).padStart(2, "0")}:00:00`);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function renderSchedule() {
+  const el = document.querySelector("#owner-schedule");
+  if (!el) return;
+  const blocks = Array.isArray(siteContent?.blocked) ? siteContent.blocked : [];
+  if (!blocks.length) {
+    el.innerHTML = `<p class="owner-schedule-empty">No extra holds yet. A new booking already keeps two hours from the start. After you confirm the style, tell me the real window.</p>`;
+    return;
+  }
+  el.innerHTML = blocks
+    .map((block) => {
+      const when = block.date
+        ? new Date(`${block.date}T12:00:00`).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })
+        : block.weekday
+          ? `${String(block.weekday)[0].toUpperCase()}${String(block.weekday).slice(1)}s`
+          : "Hold";
+      const label = block.label || `${clockFace(block.start)} – ${clockFace(block.end)}`;
+      return `<article class="owner-hold"><p class="owner-hold-day">${when}</p><p class="owner-hold-time">${label}</p></article>`;
+    })
+    .join("");
 }
 
 function cloneContent(data) {
@@ -118,40 +149,69 @@ function applyLocalEdit(message, content) {
     return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   }
 
-  if (timeMatch && (isBlockCmd || isUnblockCmd)) {
+  function addOrUpdateBlock(startHour, endHour, weekday, date) {
     if (!Array.isArray(next.blocked)) next.blocked = [];
-    const startHour = hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false);
-    const endHour = hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true);
-    const weekday = weekdayFrom(text);
-    const date = dateFromMessage(text) || (!/\bevery\b/.test(text) && weekday ? nextDateFor(weekday) : "");
-    const sameBlock = (block) =>
-      Number(block.start) === startHour &&
-      Number(block.end) === endHour &&
-      (date ? block.date === date : String(block.weekday || "") === weekday);
-    if (isUnblockCmd) {
-      const before = next.blocked.length;
-      next.blocked = next.blocked.filter((block) => !sameBlock(block));
-      if (next.blocked.length !== before) changed = true;
-    } else if (entryValid(date, weekday, startHour, endHour)) {
-      const entry = {
-        start: startHour,
-        end: endHour,
-        label: `${clockLabel(startHour)} – ${clockLabel(endHour)}`,
-      };
-      if (date) entry.date = date;
-      else if (weekday) entry.weekday = weekday;
-      if (!next.blocked.some(sameBlock)) {
-        next.blocked.push(entry);
-        changed = true;
-      }
-    }
+    if (!entryValid(date, weekday, startHour, endHour)) return;
+    next.blocked = next.blocked.filter((block) => {
+      if (date) return block.date !== date || Number(block.start) !== startHour;
+      return String(block.weekday || "") !== weekday || Number(block.start) !== startHour;
+    });
+    const entry = {
+      start: startHour,
+      end: endHour,
+      label: `${clockLabel(startHour)} – ${clockLabel(endHour)}`,
+    };
+    if (date) entry.date = date;
+    else if (weekday) entry.weekday = weekday;
+    next.blocked.push(entry);
+    changed = true;
   }
 
   function entryValid(date, weekday, startHour, endHour) {
     return (date || weekday) && Number.isFinite(startHour) && Number.isFinite(endHour) && endHour > startHour;
   }
 
-  if (timeMatch && /saturday|sat\b/.test(text) && !isBlockCmd && !isUnblockCmd) {
+  const weekday = weekdayFrom(text);
+  const date = dateFromMessage(text) || (!/\bevery\b/.test(text) && weekday ? nextDateFor(weekday) : "");
+  const isOpenHours = /\bhours\b/.test(text) && /open|saturday hours|sunday hours|hours (are|to|from)/.test(text);
+  const spanIsVisit = (startHour, endHour) => {
+    const span = endHour - startHour;
+    return span >= 2 && span <= 6;
+  };
+
+  if (timeMatch && (isUnblockCmd || isBlockCmd || spanIsVisit(
+    hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false),
+    hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true)
+  ))) {
+    const startHour = hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false);
+    const endHour = hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true);
+    if (isUnblockCmd) {
+      if (!Array.isArray(next.blocked)) next.blocked = [];
+      const before = next.blocked.length;
+      next.blocked = next.blocked.filter((block) => {
+        if (date) return !(block.date === date && Number(block.start) === startHour);
+        return !(String(block.weekday || "") === weekday && Number(block.start) === startHour);
+      });
+      if (next.blocked.length !== before) changed = true;
+    } else if (!isOpenHours) {
+      addOrUpdateBlock(startHour, endHour, weekday, date);
+    }
+  }
+
+  const durationMatch = text.match(/\b(\d)\s*hours?\b/);
+  if (!timeMatch && durationMatch && weekday) {
+    const startTok = message.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+    const length = Number(durationMatch[1]);
+    if (startTok && length >= 2 && length <= 6) {
+      const startHour = hourFrom(startTok[1], startTok[2], startTok[3], String(Number(startTok[1]) + length), false);
+      addOrUpdateBlock(startHour, startHour + length, weekday, date);
+    }
+  }
+
+  if (timeMatch && /saturday|sat\b/.test(text) && !isBlockCmd && !isUnblockCmd && !spanIsVisit(
+    hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false),
+    hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true)
+  )) {
     const start = fmt(timeMatch[1], timeMatch[2], timeMatch[3] || "AM");
     const end = fmt(timeMatch[4], timeMatch[5], timeMatch[6] || "PM");
     next.hours.saturday.text = `${start.label} – ${end.label}`;
@@ -159,7 +219,10 @@ function applyLocalEdit(message, content) {
     next.hours.saturday.end = end.hour;
     changed = true;
   }
-  if (timeMatch && /sunday|sun\b/.test(text) && !isBlockCmd && !isUnblockCmd) {
+  if (timeMatch && /sunday|sun\b/.test(text) && !isBlockCmd && !isUnblockCmd && !spanIsVisit(
+    hourFrom(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4], false),
+    hourFrom(timeMatch[4], timeMatch[5], timeMatch[6], timeMatch[1], true)
+  )) {
     const start = fmt(timeMatch[1], timeMatch[2], timeMatch[3] || "AM");
     const end = fmt(timeMatch[4], timeMatch[5], timeMatch[6] || "PM");
     next.hours.sunday.text = `${start.label} – ${end.label}`;
@@ -216,12 +279,10 @@ async function askGemini(message, content) {
   const prompt = `You edit the Styled by Tonika booking website content.
 Return ONLY JSON: {"reply":"short confirmation","content":{...full updated content object...}}
 Keep the same keys. Do not remove keys. Do not invent photos.
-Appointments last 2 to 5 hours. Clients pick an hourly start time during Saturday/Sunday hours. The owner blocks the actual window after they know the length.
-blocked is an array of closed windows clients cannot book. Do not change hours.saturday / hours.sunday unless they ask to change open hours.
-Each blocked item: {"date":"YYYY-MM-DD","start":9,"end":13,"label":"9:00 AM – 1:00 PM"} or {"weekday":"saturday","start":9,"end":13,"label":"9:00 AM – 1:00 PM"}.
-start and end are 24-hour integers. end is exclusive, so 9-1pm is start 9, end 13.
-"Remove 9-1 from Saturday booking" ADDS a blocked window (use the next Saturday date unless they say every Saturday).
-"Put 9-1 back" or "unblock Saturday 9-1" REMOVES matching blocked windows.
+Appointments silently hold 2 hours from the start time. Clients should never be told that. Public copy (bookLede, timeHint) must not mention appointment length.
+When the owner confirms the real length, UPDATE blocked for that date. Example: 9am booking already holds 9-11. “Saturday 9 to 1” → start 9, end 13.
+blocked items: {"date":"YYYY-MM-DD","start":9,"end":13,"label":"9:00 AM – 1:00 PM"} or weekday if they say every Saturday.
+Do not change hours.saturday / hours.sunday unless they clearly ask to change open hours (e.g. “Saturday hours 9 to 5”).
 Current content:
 ${JSON.stringify(content, null, 2)}
 Owner request:
@@ -281,7 +342,7 @@ async function githubPut(path, text, message) {
   }
 }
 
-addBot("You're in. After you know how long a visit will run, tell me to take that window off the booking page — like “remove 9-1 from Saturday booking.” Then hit Publish to live site.");
+addBot("You’re in. A new request already holds two hours. After you confirm the style, tell me the real window — like “Saturday 9 to 1” — then Publish.");
 loadContent();
 
 document.querySelector("#lock-btn").addEventListener("click", () => {
@@ -327,10 +388,14 @@ chatForm.addEventListener("submit", async (event) => {
       next = applyLocalEdit(message, siteContent);
       reply = next
         ? "Updated the draft. Click Publish to live site so customers see it."
-        : "I could not tell what to change. Add a Gemini API key for fuller edits, or try “remove 9-1 from Saturday booking”, “Saturday 9am to 5pm”, or “add knotless braids”.";
+        : "I could not tell what to change. Try “Saturday 9 to 1”, “Saturday hours 9 to 5”, or “add knotless braids”.";
     }
     pending.textContent = reply;
-    if (next) siteContent = next;
+    if (next) {
+      if (!Array.isArray(next.blocked)) next.blocked = [];
+      siteContent = next;
+      renderSchedule();
+    }
   } catch (err) {
     pending.textContent = String(err.message || err);
   }

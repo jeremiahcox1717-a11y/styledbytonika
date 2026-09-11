@@ -23,10 +23,7 @@ if (dateInput && timeSelect && form) {
     return `${d.getFullYear()}-${month}-${day}`;
   };
 
-  function slotHours() {
-    const n = Number(window.__SITE__?.slotHours);
-    return n > 0 ? n : 3;
-  }
+  const HOLD_HOURS = 2;
 
   function clockValue(h, min = 0) {
     return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
@@ -280,15 +277,25 @@ if (dateInput && timeSelect && form) {
     return null;
   }
 
-  function isOpenSlot(dateStr, timeValue) {
+  function hourBusy(dateStr, h) {
+    return takenSlots.has(`${dateStr}|${clockValue(h)}`) || hourIsBlocked(dateStr, h);
+  }
+
+  function holdFits(dateStr, h) {
     const hours = hoursFor(dateStr);
+    if (!hours || h < hours.start) return false;
+    if (h + HOLD_HOURS > hours.end) return false;
+    for (let i = 0; i < HOLD_HOURS; i += 1) {
+      if (hourBusy(dateStr, h + i)) return false;
+    }
+    return true;
+  }
+
+  function isOpenSlot(dateStr, timeValue) {
     const clock = parseClock(timeValue);
-    if (!hours || !clock) return false;
-    const span = slotHours();
-    if (clock.min !== 0) return false;
-    if (clock.h < hours.start || clock.h >= hours.end) return false;
-    if (hourIsBlocked(dateStr, clock.h)) return false;
-    return (clock.h - hours.start) % span === 0;
+    if (!clock || clock.min !== 0) return false;
+    if (slotHasPassed(dateStr, clock.h, clock.min)) return false;
+    return holdFits(dateStr, clock.h);
   }
 
   function timeLabelAt(h, min = 0) {
@@ -314,16 +321,13 @@ if (dateInput && timeSelect && form) {
     await loadTaken();
     if (gen !== timesGen) return;
 
-    const span = slotHours();
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
     let openCount = 0;
-    for (let h = hours.start; h < hours.end; h += span) {
-      const value = clockValue(h);
-      const key = `${dateInput.value}|${value}`;
-      if (slotHasPassed(dateInput.value, h, 0) || takenSlots.has(key) || hourIsBlocked(dateInput.value, h)) continue;
+    for (let h = hours.start; h < hours.end; h += 1) {
+      if (slotHasPassed(dateInput.value, h, 0) || !holdFits(dateInput.value, h)) continue;
       const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = `${timeLabelAt(h)} – ${timeLabelAt(h + span)}`;
+      opt.value = clockValue(h);
+      opt.textContent = timeLabelAt(h);
       timeSelect.appendChild(opt);
       openCount += 1;
     }
@@ -333,6 +337,33 @@ if (dateInput && timeSelect && form) {
     }
     if (keep && [...timeSelect.options].some((o) => o.value === keep && !o.disabled)) {
       timeSelect.value = keep;
+    }
+  }
+
+  async function claimHold(dateStr, timeValue, extra = {}) {
+    const clock = parseClock(timeValue);
+    if (!clock) return { ok: false, taken: false, keys: [] };
+    const keys = [];
+    for (let i = 0; i < HOLD_HOURS; i += 1) {
+      const claimed = await claimSlot(dateStr, clockValue(clock.h + i), extra);
+      if (!claimed.ok) {
+        for (const key of keys) {
+          const [d, t] = key.split("|");
+          forgetTaken(key);
+          await releaseSlot(d, t);
+        }
+        return { ok: false, taken: claimed.taken, keys: [] };
+      }
+      keys.push(claimed.key);
+    }
+    return { ok: true, via: keys.length ? "live" : "local", keys };
+  }
+
+  async function releaseHold(keys) {
+    for (const key of keys || []) {
+      const [d, t] = String(key).split("|");
+      forgetTaken(key);
+      await releaseSlot(d, t);
     }
   }
 
@@ -859,7 +890,7 @@ if (dateInput && timeSelect && form) {
       submitBtn.textContent = "Sending…";
     }
 
-    const claimed = await claimSlot(data.date, data.time, {
+    const claimed = await claimHold(data.date, data.time, {
       name: data.name,
       phone: data.phone,
       email: data.email,
@@ -882,8 +913,8 @@ if (dateInput && timeSelect && form) {
     try {
       sent = await sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile);
     } catch {
-      if (claimed.via === "live") await releaseSlot(data.date, data.time);
-      else forgetTaken(holdKey);
+      await releaseHold(claimed.keys);
+      forgetTaken(holdKey);
       formError.hidden = false;
       formError.textContent = "Couldn’t send your request. Please try again or email styledbytonika@gmail.com.";
       if (submitBtn) {
@@ -892,7 +923,7 @@ if (dateInput && timeSelect && form) {
       }
       return;
     }
-    rememberTaken(holdKey);
+    (claimed.keys || [holdKey]).forEach((key) => rememberTaken(key));
 
     if (remindOn) {
       const webhook = String(window.__SITE__?.smsWebhook || "").trim();

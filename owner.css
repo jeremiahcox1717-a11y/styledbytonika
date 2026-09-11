@@ -1,8 +1,10 @@
 .owner-page {
   min-height: 100vh;
+  color: #f6eef3;
   background:
-    radial-gradient(ellipse at top, rgba(255, 78, 200, 0.12), transparent 46%),
-    #000;
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(255, 78, 200, 0.28), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(255, 78, 200, 0.12), transparent 46%),
+    linear-gradient(180deg, #12060c 0%, #000 42%, #000 100%);
 }
 
 .owner-page [hidden] {
@@ -25,6 +27,14 @@
   padding: 2rem 1.4rem 4rem;
 }
 
+.owner-gate-card {
+  width: min(100%, 26rem);
+  padding: 2.4rem 1.6rem 2rem;
+  border: 1px solid rgba(255, 78, 200, 0.28);
+  background: rgba(12, 8, 12, 0.72);
+  box-shadow: 0 24px 80px rgba(255, 78, 200, 0.12);
+}
+
 .owner-gate h1,
 .owner-hero h1 {
   font-size: clamp(3.2rem, 8vw, 5.4rem);
@@ -34,11 +44,19 @@
 .owner-lede,
 .owner-hero p,
 .owner-hint {
-  font-family: var(--display);
-  color: #d7d7d7;
-  max-width: 34rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #eadde4;
+  max-width: 36rem;
   margin: 0 auto 1.4rem;
-  line-height: 1.6;
+  line-height: 1.65;
+  font-size: 1.15rem;
+}
+
+.owner-hint {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  color: #c9b8c4;
+  letter-spacing: 0.02em;
 }
 
 .owner-hint code {
@@ -64,6 +82,24 @@
   gap: 0.4rem;
 }
 
+.owner-page input,
+.owner-page textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  padding: 0.85rem 0.95rem;
+  font-family: var(--display);
+  font-size: 0.95rem;
+}
+
+.owner-page input:focus,
+.owner-page textarea:focus {
+  outline: none;
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
+}
+
 .owner-back,
 .owner-top-actions a,
 .owner-top-actions button {
@@ -80,7 +116,7 @@
 }
 
 .owner-studio {
-  padding-bottom: 4rem;
+  padding-bottom: 4.5rem;
 }
 
 .owner-top {
@@ -88,11 +124,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 6vw;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 78, 200, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
 }
 
 .owner-logo {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
 }
 
 .owner-top-actions {
@@ -103,21 +141,64 @@
 
 .owner-lock {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 78, 200, 0.5);
+  padding: 0.55rem 0.9rem;
   cursor: pointer;
 }
 
-.owner-hero,
-.owner-keys,
-.owner-chat-wrap {
-  width: min(100%, 44rem);
+.owner-lock:hover {
+  background: var(--neon);
+  color: #000;
+}
+
+.owner-hero {
+  width: min(100%, 72rem);
   margin: 0 auto;
-  padding: 2rem 6vw 0;
+  padding: 2.4rem 6vw 0.6rem;
+}
+
+.owner-hero p {
+  margin-left: 0;
+}
+
+.owner-shell {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  padding: 1.2rem 6vw 0;
+  display: grid;
+  gap: 1.4rem;
+}
+
+@media (min-width: 960px) {
+  .owner-shell {
+    grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
+    align-items: start;
+  }
+}
+
+.owner-chat-wrap,
+.owner-card,
+.owner-keys details {
+  border: 1px solid rgba(255, 78, 200, 0.22);
+  background: rgba(18, 8, 14, 0.72);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.owner-chat-wrap {
+  padding: 1.1rem;
+}
+
+.owner-card {
+  padding: 1.15rem 1.2rem 1.3rem;
+}
+
+.owner-keys {
+  width: auto;
+  margin: 0;
+  padding: 0;
 }
 
 .owner-keys details {
-  border: 1px solid rgba(255, 255, 255, 0.22);
   padding: 1rem 1.1rem;
 }
 
@@ -127,19 +208,11 @@
   text-transform: uppercase;
   font-size: 0.72rem;
   cursor: pointer;
+  color: #ffb7e6;
 }
 
 .owner-keys label {
   margin-top: 0.9rem;
-}
-
-.owner-keys .submit {
-  margin-top: 1.1rem;
-  width: 100%;
-}
-
-.owner-keys + .owner-keys {
-  padding-top: 1rem;
 }
 
 .owner-keys a {
@@ -147,21 +220,19 @@
 }
 
 .owner-chat {
-  min-height: 18rem;
-  max-height: 28rem;
+  min-height: 22rem;
+  max-height: 34rem;
   overflow: auto;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  padding: 1rem;
+  padding: 0.4rem 0.2rem 0.6rem;
   display: grid;
   gap: 0.85rem;
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .owner-msg {
-  font-family: var(--display);
-  font-size: 0.92rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.05rem;
   line-height: 1.55;
-  padding: 0.75rem 0.9rem;
+  padding: 0.85rem 1rem;
   width: fit-content;
   max-width: 92%;
 }
@@ -169,11 +240,14 @@
 .owner-msg.user {
   justify-self: end;
   background: var(--neon);
-  color: #000;
+  color: #111;
+  border-radius: 1.1rem 1.1rem 0.25rem 1.1rem;
 }
 
 .owner-msg.bot {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.1rem 1.1rem 1.1rem 0.25rem;
 }
 
 .owner-compose {
@@ -184,7 +258,7 @@
 
 .owner-compose textarea {
   resize: vertical;
-  min-height: 4.2rem;
+  min-height: 4.4rem;
 }
 
 .owner-publish-row {
@@ -196,5 +270,44 @@
 .owner-status {
   font-family: var(--display);
   font-size: 0.85rem;
-  color: #cfcfcf;
+  color: #e3c7d6;
+}
+
+.owner-schedule {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.owner-schedule-empty {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #d8c3ce;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.owner-hold {
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(255, 78, 200, 0.28);
+  background: rgba(255, 78, 200, 0.08);
+}
+
+.owner-hold-day {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffb7e6;
+  margin: 0 0 0.25rem;
+}
+
+.owner-hold-time {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.35rem;
+  margin: 0;
+  color: #fff;
+}
+
+.kicker-left {
+  text-align: left;
 }

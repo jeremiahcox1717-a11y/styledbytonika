@@ -9,9 +9,9 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=68" />
-  <link rel="stylesheet" href="owner.css?v=5" />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=70" />
+  <link rel="stylesheet" href="owner.css?v=6" />
   <script src="owner-config.js?v=4"></script>
   <script>
     window.OWNER_CONFIG = window.OWNER_CONFIG || {};
@@ -37,46 +37,53 @@
     </header>
 
     <section class="owner-hero">
-      <p class="kicker">Owner studio</p>
-      <h1 class="neon">Site bot</h1>
-      <p>Tell it what to change. Example: “remove 9-1 from Saturday booking” or “Saturday hours 9 to 5.”</p>
+      <p class="kicker">Private studio</p>
+      <h1 class="neon">Your salon desk</h1>
+      <p>Confirm the style, then tell me how long the visit will really take. Example: “Saturday 9 to 1.” Publish when it looks right.</p>
     </section>
 
-    <section class="owner-keys">
-      <details>
-        <summary>Keys (kept in this browser only)</summary>
-        <p class="owner-hint">Paste these once per visit. They are not saved on the public website.</p>
-        <label>
-          Gemini API key
-          <input id="gemini-key" type="password" autocomplete="off" placeholder="Starts with AIza…" />
-        </label>
-        <label>
-          GitHub token (repo scope)
-          <input id="github-token" type="password" autocomplete="off" placeholder="ghp_…" />
-        </label>
-        <label>
-          SMS reminder webhook
-          <input id="sms-webhook" type="url" autocomplete="off" placeholder="https://styledbytonika-sms.workers.dev" />
-        </label>
-        <p class="owner-hint">Gemini key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. GitHub token: Settings → Developer settings → Personal access tokens, with access to this repo. After you click Publish, the live site updates in about a minute.</p>
-        <p class="owner-hint">Text reminders: create a Twilio account, a phone number, and a Messaging Service. Deploy <code>sms-worker.js</code> with Cloudflare Wrangler, save the three Twilio secrets, paste the worker URL here, then Publish. Clients are texted 3 hours before with the day and time. After a booking, tell the bot to close that window — for example “remove 9-1 from Saturday booking” — then Publish so the next client cannot pick those hours.</p>
-      </details>
-    </section>
+    <div class="owner-shell">
+      <section class="owner-chat-wrap">
+        <div id="chat-log" class="owner-chat" aria-live="polite"></div>
+        <form id="chat-form" class="owner-compose">
+          <label class="sr-only" for="chat-input">Message the bot</label>
+          <textarea id="chat-input" rows="2" required placeholder="Saturday 9 to 1…"></textarea>
+          <button class="submit" type="submit">Send</button>
+        </form>
+        <div class="owner-publish-row">
+          <button type="button" id="publish-btn" class="btn-pink">Publish to live site</button>
+          <p id="publish-status" class="owner-status"></p>
+        </div>
+      </section>
 
-    <section class="owner-chat-wrap">
-      <div id="chat-log" class="owner-chat" aria-live="polite"></div>
-      <form id="chat-form" class="owner-compose">
-        <label class="sr-only" for="chat-input">Message the bot</label>
-        <textarea id="chat-input" rows="2" required placeholder="What should we change?"></textarea>
-        <button class="submit" type="submit">Send</button>
-      </form>
-      <div class="owner-publish-row">
-        <button type="button" id="publish-btn" class="btn-pink">Publish to live site</button>
-        <p id="publish-status" class="owner-status"></p>
-      </div>
-    </section>
+      <aside class="owner-side">
+        <section class="owner-card">
+          <p class="kicker kicker-left">Holds</p>
+          <div id="owner-schedule" class="owner-schedule"></div>
+        </section>
+        <section class="owner-keys">
+          <details>
+            <summary>Keys (this browser only)</summary>
+            <p class="owner-hint">Paste these once per visit. They are not saved on the public website.</p>
+            <label>
+              Gemini API key
+              <input id="gemini-key" type="password" autocomplete="off" placeholder="Starts with AIza…" />
+            </label>
+            <label>
+              GitHub token (repo scope)
+              <input id="github-token" type="password" autocomplete="off" placeholder="ghp_…" />
+            </label>
+            <label>
+              SMS reminder webhook
+              <input id="sms-webhook" type="url" autocomplete="off" placeholder="https://styledbytonika-sms.workers.dev" />
+            </label>
+            <p class="owner-hint">Gemini: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. GitHub token: Settings → Developer settings → Personal access tokens, with access to this repo.</p>
+          </details>
+        </section>
+      </aside>
+    </div>
   </div>
 
-  <script src="studio.js?v=5"></script>
+  <script src="studio.js?v=6"></script>
 </body>
 </html>
