@@ -49,7 +49,7 @@ function renderSchedule() {
   if (!el) return;
   const blocks = Array.isArray(siteContent?.blocked) ? siteContent.blocked : [];
   if (!blocks.length) {
-    el.innerHTML = `<p class="owner-schedule-empty">No extra holds yet. A new booking already keeps two hours from the start. After you confirm the style, tell me the real window.</p>`;
+    el.innerHTML = `<p class="owner-schedule-empty">No extra holds yet.</p>`;
     return;
   }
   el.innerHTML = blocks
@@ -71,6 +71,74 @@ function renderSchedule() {
 
 function cloneContent(data) {
   return JSON.parse(JSON.stringify(data));
+}
+
+function sameContent(a, b) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+function answerLocal(message, content) {
+  const q = String(message || "").toLowerCase();
+  const services = (content.services || []).filter(Boolean);
+  const sat = content.hours?.saturday?.text || "9:00 AM – 5:00 PM";
+  const sun = content.hours?.sunday?.text || "9:00 AM – 5:00 PM";
+  const holds = Array.isArray(content.blocked) ? content.blocked : [];
+
+  if (/^(hi|hey|hello|yo|sup|what'?s up)\b/.test(q)) {
+    return "Hey. Ask me anything.";
+  }
+  if (/service|what do you (do|offer)|what styles/.test(q)) {
+    return services.length
+      ? `Services on the site: ${services.join(", ")}.`
+      : "No services listed yet. Tell me what to add.";
+  }
+  if (/hour|open|when.*book|weekend/.test(q)) {
+    return `Saturday ${sat}. Sunday ${sun}. Weekend bookings only.`;
+  }
+  if (/phone|call|number|text/.test(q) && !/change|update|set/.test(q)) {
+    return `Phone on the site is ${content.phone || "not set"}.`;
+  }
+  if (/email|inbox/.test(q) && !/change|update|set/.test(q)) {
+    return `Email on the site is ${content.email || "not set"}.`;
+  }
+  if (/instagram|ig\b|handle/.test(q) && !/change|update|set/.test(q)) {
+    return `Instagram is ${content.instagram || "not set"}.`;
+  }
+  if (/deposit|cash|pay|price|cost/.test(q)) {
+    return content.policies?.deposits || "Deposit policy isn’t set.";
+  }
+  if (/travel|mobile|address|location|bc\b|british/.test(q) && !/change|update|set/.test(q)) {
+    return content.addressNote || content.policies?.traveling || "Mobile service in British Columbia.";
+  }
+  if (/late|grace|delay/.test(q)) {
+    return content.policies?.delay || "Late policy isn’t set.";
+  }
+  if (/reschedule|cancel|48/.test(q)) {
+    return content.policies?.reschedule || "Reschedule policy isn’t set.";
+  }
+  if (/bio|about (me|tonika|you)|who am i/.test(q) && !/change|update|set|bio:/.test(q)) {
+    return content.bio || "No bio on the site yet.";
+  }
+  if (/hold|blocked|closed|calendar/.test(q) && !/remove|block|close|unblock/.test(q)) {
+    if (!holds.length) return "No extra holds on the calendar right now.";
+    return `Holds: ${holds.map((block) => block.label || `${block.start}–${block.end}`).join("; ")}.`;
+  }
+  if (/book|how do (they|people) book|booking page|website say|what'?s on (the )?(site|website)|policies|before you come/.test(q)) {
+    return [
+      `${content.brand} by ${content.owner}.`,
+      `Saturday ${sat}, Sunday ${sun}.`,
+      services.length ? `Services: ${services.join(", ")}.` : "",
+      content.bookLede,
+      `Phone ${content.phone}. Email ${content.email}.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+  return "";
 }
 
 function applyLocalEdit(message, content) {
@@ -276,16 +344,24 @@ function applyLocalEdit(message, content) {
 async function askGemini(message, content) {
   const key = geminiInput.value.trim();
   if (!key) return null;
-  const prompt = `You edit the Styled by Tonika booking website content.
-Return ONLY JSON: {"reply":"short confirmation","content":{...full updated content object...}}
-Keep the same keys. Do not remove keys. Do not invent photos.
-Appointments silently hold 2 hours from the start time. Clients should never be told that. Public copy (bookLede, timeHint) must not mention appointment length.
-When the owner confirms the real length, UPDATE blocked for that date. Example: 9am booking already holds 9-11. “Saturday 9 to 1” → start 9, end 13.
-blocked items: {"date":"YYYY-MM-DD","start":9,"end":13,"label":"9:00 AM – 1:00 PM"} or weekday if they say every Saturday.
-Do not change hours.saturday / hours.sunday unless they clearly ask to change open hours (e.g. “Saturday hours 9 to 5”).
-Current content:
+  const prompt = `You are Tonika Lord’s private studio assistant for Styled by Tonika (styledbytonika.ca).
+Talk to her like a helpful desk assistant. Answer questions about HER website, booking page, hours, services, policies, photos notes, holds, contact info, and how the site works.
+You can also edit the live site content when she asks to change something.
+
+Return ONLY JSON: {"reply":"your message to Tonika","content":null}
+If she asked you to change the site, set content to the FULL updated content object with the same keys.
+If she only asked a question, keep content null and put a clear answer in reply.
+
+Rules for edits:
+- Keep the same keys. Do not remove keys. Do not invent photos.
+- New bookings silently hold 2 hours from the start. Clients must never be told that. Public copy (bookLede, timeHint) must not mention appointment length.
+- If she extends a visit, UPDATE blocked. End hour is exclusive. Saturday 9 until 1 → start 9, end 13.
+- blocked items: {"date":"YYYY-MM-DD","start":9,"end":13,"label":"9:00 AM – 1:00 PM"} or weekday if she says every Saturday.
+- Do not change hours.saturday / hours.sunday unless she clearly asks to change open hours.
+
+Current site content:
 ${JSON.stringify(content, null, 2)}
-Owner request:
+Tonika:
 ${message}`;
 
   const res = await fetch(
@@ -295,7 +371,7 @@ ${message}`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2 },
+        generationConfig: { temperature: 0.4 },
       }),
     }
   );
@@ -342,7 +418,7 @@ async function githubPut(path, text, message) {
   }
 }
 
-addBot("You’re in. A new booking already holds two hours. After you confirm the style, type Saturday 9 to 1, then Publish.");
+addBot("Hey. Ask me anything.");
 loadContent();
 
 document.querySelector("#lock-btn").addEventListener("click", () => {
@@ -374,21 +450,22 @@ chatForm.addEventListener("submit", async (event) => {
     let next = null;
     try {
       const ai = await askGemini(message, siteContent);
-      if (ai?.content) {
+      if (ai?.reply) reply = String(ai.reply).trim();
+      if (ai?.content && typeof ai.content === "object" && !sameContent(siteContent, ai.content)) {
         next = ai.content;
-        reply = ai.reply || "Updated.";
       }
     } catch (err) {
-      reply = "";
       if (geminiInput.value.trim()) {
         pending.textContent = String(err.message || err);
       }
     }
     if (!next) {
       next = applyLocalEdit(message, siteContent);
-      reply = next
-        ? "Updated the draft. Click Publish to live site so customers see it."
-        : "I could not tell what to change. Try “Saturday 9 to 1”, “Saturday hours 9 to 5”, or “add knotless braids”.";
+      if (next) {
+        reply = reply || "Updated the draft. Click Publish so customers see it.";
+      } else if (!reply) {
+        reply = answerLocal(message, siteContent) || "Ask me anything about the site, or tell me what you want to change.";
+      }
     }
     pending.textContent = reply;
     if (next) {
