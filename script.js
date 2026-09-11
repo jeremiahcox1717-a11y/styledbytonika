@@ -9,10 +9,11 @@ if (dateInput && timeSelect && form) {
   const TZ = "America/Vancouver";
   try {
     localStorage.removeItem("sbt-taken-slots");
+    localStorage.removeItem("sbt-taken-slots-v2");
   } catch {
     /* ignore */
   }
-  const LOCAL_TAKEN_KEY = "sbt-taken-slots-v2";
+  const LOCAL_TAKEN_KEY = "sbt-taken-slots-v3";
   const takenSlots = new Set();
   let liveCalendar = "";
   let timesGen = 0;
@@ -22,11 +23,6 @@ if (dateInput && timeSelect && form) {
     const day = String(d.getDate()).padStart(2, "0");
     return `${d.getFullYear()}-${month}-${day}`;
   };
-
-  function slotHours() {
-    const n = Number(window.__SITE__?.slotHours);
-    return n > 0 ? n : 1;
-  }
 
   const HOLD_HOURS = 2;
 
@@ -283,7 +279,11 @@ if (dateInput && timeSelect && form) {
   }
 
   function hourBusy(dateStr, h) {
-    return takenSlots.has(`${dateStr}|${clockValue(h)}`) || hourIsBlocked(dateStr, h);
+    if (hourIsBlocked(dateStr, h)) return true;
+    for (let i = 0; i < HOLD_HOURS; i += 1) {
+      if (takenSlots.has(`${dateStr}|${clockValue(h - i)}`)) return true;
+    }
+    return false;
   }
 
   function holdFits(dateStr, h) {
@@ -297,13 +297,9 @@ if (dateInput && timeSelect && form) {
   }
 
   function isOpenSlot(dateStr, timeValue) {
-    const hours = hoursFor(dateStr);
     const clock = parseClock(timeValue);
-    const span = slotHours();
-    if (!hours || !clock) return false;
-    if (clock.min !== 0) return false;
+    if (!clock || clock.min !== 0) return false;
     if (slotHasPassed(dateStr, clock.h, clock.min)) return false;
-    if ((clock.h - hours.start) % span !== 0) return false;
     return holdFits(dateStr, clock.h);
   }
 
@@ -330,14 +326,13 @@ if (dateInput && timeSelect && form) {
     await loadTaken();
     if (gen !== timesGen) return;
 
-    const span = slotHours();
     timeSelect.innerHTML = `<option value="" disabled selected>Select a time</option>`;
     let openCount = 0;
-    for (let h = hours.start; h < hours.end; h += span) {
+    for (let h = hours.start; h < hours.end; h += 1) {
       if (slotHasPassed(dateInput.value, h, 0) || !holdFits(dateInput.value, h)) continue;
       const opt = document.createElement("option");
       opt.value = clockValue(h);
-      opt.textContent = span > 1 ? `${timeLabelAt(h)} – ${timeLabelAt(h + span - 1)}` : timeLabelAt(h);
+      opt.textContent = timeLabelAt(h);
       timeSelect.appendChild(opt);
       openCount += 1;
     }
@@ -351,22 +346,9 @@ if (dateInput && timeSelect && form) {
   }
 
   async function claimHold(dateStr, timeValue, extra = {}) {
-    const clock = parseClock(timeValue);
-    if (!clock) return { ok: false, taken: false, keys: [] };
-    const keys = [];
-    for (let i = 0; i < HOLD_HOURS; i += 1) {
-      const claimed = await claimSlot(dateStr, clockValue(clock.h + i), extra);
-      if (!claimed.ok) {
-        for (const key of keys) {
-          const [d, t] = key.split("|");
-          forgetTaken(key);
-          await releaseSlot(d, t);
-        }
-        return { ok: false, taken: claimed.taken, keys: [] };
-      }
-      keys.push(claimed.key);
-    }
-    return { ok: true, via: keys.length ? "live" : "local", keys };
+    const claimed = await claimSlot(dateStr, timeValue, extra);
+    if (!claimed.ok) return { ok: false, taken: claimed.taken, keys: [] };
+    return { ok: true, via: claimed.via, keys: [claimed.key] };
   }
 
   async function releaseHold(keys) {
