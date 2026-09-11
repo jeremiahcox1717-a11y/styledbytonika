@@ -97,7 +97,7 @@ if (dateInput && timeSelect && form) {
     });
   }
 
-  async function claimSlot(dateStr, timeValue) {
+  async function claimSlot(dateStr, timeValue, extra = {}) {
     const key = slotKey(dateStr, timeValue);
     await loadTaken();
     if (takenSlots.has(key)) return { ok: false, taken: true, key };
@@ -538,7 +538,97 @@ if (dateInput && timeSelect && form) {
     removeBtn: form.querySelector("#inspo-remove"),
   });
 
-  function bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile) {
+  function arrayBufferToBase64(buf) {
+    const bytes = new Uint8Array(buf);
+    const chunk = 0x8000;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  async function blobToInline(blob, filename, kind) {
+    if (!blob) return null;
+    const buf = await blob.arrayBuffer();
+    return {
+      b64: arrayBufferToBase64(buf),
+      type: blob.type || "image/jpeg",
+      filename: filename || "photo.jpg",
+      kind: kind || "photo",
+    };
+  }
+
+  async function compressImageFile(file) {
+    let bitmap = null;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      bitmap = null;
+    }
+    if (!bitmap) return blobToInline(file, file.name, "photo");
+    const maxEdge = 1000;
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.74));
+    const name = String(file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
+    return blobToInline(blob || file, name, "photo");
+  }
+
+  async function videoPoster(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      video.src = url;
+      const done = async (blob) => {
+        URL.revokeObjectURL(url);
+        video.removeAttribute("src");
+        video.load();
+        if (!blob) {
+          resolve(null);
+          return;
+        }
+        const name = String(file.name || "video").replace(/\.[^.]+$/, "") + "-preview.jpg";
+        resolve(await blobToInline(blob, name, "video"));
+      };
+      video.onerror = () => done(null);
+      video.onloadeddata = () => {
+        try {
+          video.currentTime = Math.min(0.25, Math.max(0, (video.duration || 1) * 0.1));
+        } catch {
+          done(null);
+        }
+      };
+      video.onseeked = () => {
+        const canvas = document.createElement("canvas");
+        const w = video.videoWidth || 640;
+        const h = video.videoHeight || 640;
+        const scale = Math.min(1, 1000 / Math.max(w, h));
+        canvas.width = Math.max(1, Math.round(w * scale));
+        canvas.height = Math.max(1, Math.round(h * scale));
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => done(blob), "image/jpeg", 0.74);
+      };
+    });
+  }
+
+  async function fileToInline(file) {
+    if (!file) return null;
+    if (isVideoFile(file)) {
+      const poster = await videoPoster(file);
+      return poster;
+    }
+    return compressImageFile(file);
+  }
+
+  function bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile, extra = {}) {
     return [
       "New Styled by Tonika booking",
       "",
@@ -549,11 +639,14 @@ if (dateInput && timeSelect && form) {
       `Service: ${data.service}`,
       `When: ${day} at ${timeLabel}`,
       `Address: ${where || "(none)"}`,
-      `Current hair ${hairFile ? mediaKind(hairFile) : "photo/video"}: ${hairFile?.name || "(none uploaded)"}`,
-      `Inspiration ${inspoFile ? mediaKind(inspoFile) : "photo/video"}: ${inspoFile?.name || "(none uploaded)"}`,
+      extra.hairUrl ? `Current hair photo: ${extra.hairUrl}` : `Current hair: ${hairFile?.name || "(none uploaded)"}`,
+      extra.inspoUrl ? `Inspiration photo: ${extra.inspoUrl}` : `Inspiration: ${inspoFile?.name || "(none uploaded)"}`,
+      extra.recapUrl ? `Open with photos: ${extra.recapUrl}` : "",
       `Inspiration link: ${data["inspo-url"] || "(none)"}`,
       `Notes: ${data.notes || "(none)"}`,
-    ].join("\n");
+    ]
+      .filter((line, i, arr) => line !== "" || arr[i - 1] !== "")
+      .join("\n");
   }
 
   function openMailto(inbox, subject, body) {
@@ -566,25 +659,25 @@ if (dateInput && timeSelect && form) {
     a.remove();
   }
 
-  async function postFormSubmit(inbox, subject, body, data, day, timeLabel, where, hairFile, inspoFile, attachFile, extraFields) {
+  async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
     const fd = new FormData();
-    fd.append("name", data.name);
-    fd.append("phone", data.phone);
-    fd.append("email", data.email);
-    fd.append("instagram", data.instagram || "(none)");
-    fd.append("service", data.service);
-    fd.append("date", day);
-    fd.append("time", timeLabel);
-    fd.append("address", where);
-    fd.append("current_hair", hairFile?.name || "(none uploaded)");
-    fd.append("inspiration_file", inspoFile?.name || "(none uploaded)");
-    fd.append("inspiration_link", data["inspo-url"] || "(none)");
-    fd.append("notes", data.notes || "(none)");
-    Object.entries(extraFields || {}).forEach(([key, value]) => fd.append(key, value));
-    if (attachFile) fd.append("attachment", attachFile, attachFile.name);
     fd.append("_subject", subject);
-    fd.append("_template", "table");
+    fd.append("_template", "box");
     fd.append("_replyto", data.email);
+    if (extras.recapUrl) fd.append("Open this booking", extras.recapUrl);
+    fd.append("Client", data.name);
+    fd.append("Phone", data.phone);
+    fd.append("Client email", data.email);
+    fd.append("Instagram", data.instagram || "(none)");
+    fd.append("Service", data.service);
+    fd.append("When", `${day} at ${timeLabel}`);
+    fd.append("Address", where || "(none)");
+    if (extras.hairUrl) fd.append("Current hair photo", extras.hairUrl);
+    if (extras.inspoUrl) fd.append("Inspiration photo", extras.inspoUrl);
+    fd.append("Inspiration link", data["inspo-url"] || "(none)");
+    fd.append("Notes", data.notes || "(none)");
+    if (extras.hairBlob) fd.append("attachment", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
+    if (extras.inspoBlob) fd.append("inspiration", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
     const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
       method: "POST",
       headers: { Accept: "application/json" },
@@ -592,7 +685,15 @@ if (dateInput && timeSelect && form) {
     });
     const out = await res.json().catch(() => ({}));
     if (String(out.success) !== "true") throw new Error("FormSubmit failed");
-    return { inbox, subject, body, via: "formsubmit" };
+    return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
+  }
+
+  function inlineToBlob(inline) {
+    if (!inline?.b64) return null;
+    const bin = atob(inline.b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    return new File([bytes], inline.filename || "photo.jpg", { type: inline.type || "image/jpeg" });
   }
 
   async function sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile) {
@@ -601,47 +702,67 @@ if (dateInput && timeSelect && form) {
       throw new Error("Bad inbox");
     }
     const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
-    const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
-    const attachments = [];
-    if (hairFile) attachments.push({ file: hairFile, label: `Current hair ${mediaKind(hairFile)}` });
-    if (inspoFile) attachments.push({ file: inspoFile, label: `Inspiration ${mediaKind(inspoFile)}` });
+    const hair = await fileToInline(hairFile);
+    const inspo = await fileToInline(inspoFile);
+    const payload = {
+      action: "notify",
+      inbox,
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      instagram: data.instagram || "",
+      service: data.service,
+      date: data.date,
+      time: data.time,
+      day,
+      timeLabel,
+      address: where,
+      notes: data.notes || "",
+      inspoLink: data["inspo-url"] || "",
+      subject,
+      hair,
+      inspo,
+    };
+
+    for (const url of bookingEndpoints()) {
+      try {
+        const { res, out } = await fetchJson(
+          url,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+          25000
+        );
+        if (res.ok && out.ok) {
+          return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
+        }
+        if (out.recapUrl) {
+          try {
+            return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
+              recapUrl: out.recapUrl,
+              hairUrl: out.hairUrl,
+              inspoUrl: out.inspoUrl,
+              hairBlob: inlineToBlob(hair),
+              inspoBlob: inlineToBlob(inspo),
+            });
+          } catch {
+            /* try next endpoint */
+          }
+        }
+      } catch {
+        /* try next */
+      }
+    }
 
     try {
-      const first = attachments[0]?.file || null;
-      const sent = await postFormSubmit(
-        inbox,
-        subject,
-        body,
-        data,
-        day,
-        timeLabel,
-        where,
-        hairFile,
-        inspoFile,
-        first,
-        first ? { attached_file: attachments[0].label } : {}
-      );
-      if (attachments[1]) {
-        try {
-          await postFormSubmit(
-            inbox,
-            `${attachments[1].label} for ${data.name}`,
-            body,
-            data,
-            day,
-            timeLabel,
-            where,
-            hairFile,
-            inspoFile,
-            attachments[1].file,
-            { attached_file: attachments[1].label }
-          );
-        } catch {
-          /* main booking already reached the inbox */
-        }
-      }
-      return sent;
+      return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
+        hairBlob: inlineToBlob(hair),
+        inspoBlob: inlineToBlob(inspo),
+      });
     } catch {
+      const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
       openMailto(inbox, subject, body);
       return { inbox, subject, body, via: "mailto" };
     }
@@ -706,7 +827,12 @@ if (dateInput && timeSelect && form) {
       submitBtn.textContent = "Sending…";
     }
 
-    const claimed = await claimSlot(data.date, data.time);
+    const claimed = await claimSlot(data.date, data.time, {
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      service: data.service,
+    });
     if (!claimed.ok) {
       formError.hidden = false;
       formError.textContent = claimed.taken

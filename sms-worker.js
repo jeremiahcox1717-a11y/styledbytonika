@@ -545,17 +545,17 @@ function blobFromBase64(b64, type) {
 
 async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) {
   if (!env.EMAIL || typeof env.EMAIL.send !== "function") return false;
-  const hairCid = hair ? "hair-photo" : "";
-  const inspoCid = inspo ? "inspo-photo" : "";
-  const html = bookingEmailHtml({
-    booking: {
-      ...booking,
-      hairUrl: hair ? `${origin}/media/${idFor(booking.id, "hair")}` : "",
-      inspoUrl: inspo ? `${origin}/media/${idFor(booking.id, "inspo")}` : "",
-    },
+  const htmlWithCid = bookingEmailHtml({
+    booking,
     origin,
-    hairCid,
-    inspoCid,
+    hairCid: hair ? "hair-photo" : "",
+    inspoCid: inspo ? "inspo-photo" : "",
+  });
+  const htmlWithUrls = bookingEmailHtml({
+    booking,
+    origin,
+    hairCid: "",
+    inspoCid: "",
   });
   const text = bookingEmailText(booking, origin);
   const attachments = [];
@@ -565,7 +565,7 @@ async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) 
       filename: hair.filename || "current-hair.jpg",
       type: hair.type || "image/jpeg",
       disposition: "inline",
-      contentId: hairCid,
+      contentId: "hair-photo",
     });
   }
   if (inspo) {
@@ -574,16 +574,17 @@ async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) 
       filename: inspo.filename || "inspiration.jpg",
       type: inspo.type || "image/jpeg",
       disposition: "inline",
-      contentId: inspoCid,
+      contentId: "inspo-photo",
     });
   }
+  const from = { email: "bookings@styledbytonika.ca", name: "Styled by Tonika" };
   try {
     await env.EMAIL.send({
       to: inbox,
-      from: { email: "bookings@styledbytonika.ca", name: "Styled by Tonika" },
+      from,
       replyTo: booking.email,
       subject: booking.subject,
-      html,
+      html: htmlWithCid,
       text,
       attachments,
     });
@@ -594,7 +595,7 @@ async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) 
         to: inbox,
         from: "bookings@styledbytonika.ca",
         subject: booking.subject,
-        html,
+        html: htmlWithUrls,
         text,
       });
       return true;
@@ -607,11 +608,7 @@ async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) 
 async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
   if (!env.RESEND_API_KEY) return false;
   const html = bookingEmailHtml({
-    booking: {
-      ...booking,
-      hairUrl: hair ? `${origin}/media/${idFor(booking.id, "hair")}` : "",
-      inspoUrl: inspo ? `${origin}/media/${idFor(booking.id, "inspo")}` : "",
-    },
+    booking,
     origin,
     hairCid: hair ? "hair-photo" : "",
     inspoCid: inspo ? "inspo-photo" : "",
