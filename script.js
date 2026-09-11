@@ -7,7 +7,7 @@ const successCopy = document.querySelector("#success-copy");
 
 if (dateInput && timeSelect && form) {
   const TZ = "America/Vancouver";
-  const LOCAL_TAKEN_KEY = "sbt-taken-slots";
+  const LOCAL_TAKEN_KEY = "sbt-taken-slots-v2";
   const takenSlots = new Set();
   let liveCalendar = "";
   let timesGen = 0;
@@ -124,7 +124,15 @@ if (dateInput && timeSelect && form) {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "claim", date: dateStr, time: timeValue }),
+            body: JSON.stringify({
+              action: "claim",
+              date: dateStr,
+              time: timeValue,
+              name: extra?.name || "",
+              phone: extra?.phone || "",
+              email: extra?.email || "",
+              service: extra?.service || "",
+            }),
           },
           8000
         );

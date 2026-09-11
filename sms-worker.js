@@ -133,6 +133,17 @@ function calendarStub(env) {
   return env.CALENDAR.get(env.CALENDAR.idFromName("bookings"));
 }
 
+function isSlotStorageKey(key) {
+  return /^\d{4}-\d{2}-\d{2}\|\d{2}:\d{2}$/.test(String(key || ""));
+}
+
+function namesMatch(stored, needle) {
+  const a = cleanName(stored).toLowerCase();
+  const b = cleanName(needle).toLowerCase();
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
 export class BookingCalendar {
   constructor(state) {
     this.state = state;
@@ -151,15 +162,71 @@ export class BookingCalendar {
     if (action === "list") {
       const taken = [];
       const all = await this.state.storage.list();
-      for (const key of all.keys()) {
+      for (const [key, value] of all) {
+        if (!isSlotStorageKey(key)) continue;
         const date = String(key).split("|")[0];
         if (date < today) {
           await this.state.storage.delete(key);
           continue;
         }
-        taken.push(key);
+        taken.push(typeof value === "object" && value?.name ? { key, name: value.name } : key);
       }
-      return Response.json({ ok: true, taken });
+      return Response.json({
+        ok: true,
+        taken: taken.map((item) => (typeof item === "string" ? item : item.key)),
+        bookings: taken,
+      });
+    }
+
+    if (action === "get-media") {
+      const media = await this.state.storage.get(`m:${payload.id}`);
+      if (!media) return Response.json({ ok: false, error: "missing" }, { status: 404 });
+      return Response.json({ ok: true, media });
+    }
+
+    if (action === "get-booking") {
+      const booking = await this.state.storage.get(`b:${payload.id}`);
+      if (!booking) return Response.json({ ok: false, error: "missing" }, { status: 404 });
+      return Response.json({ ok: true, booking });
+    }
+
+    if (action === "save-booking") {
+      const booking = payload.booking || {};
+      const id = String(booking.id || "").slice(0, 80);
+      if (!id) return Response.json({ ok: false, error: "Need booking id" }, { status: 400 });
+      if (payload.hair) await this.state.storage.put(`m:${id}-hair`, payload.hair);
+      if (payload.inspo) await this.state.storage.put(`m:${id}-inspo`, payload.inspo);
+      await this.state.storage.put(`b:${id}`, booking);
+      const key = slotKey(booking.date, booking.time);
+      if (key) {
+        const existing = (await this.state.storage.get(key)) || {};
+        await this.state.storage.put(key, {
+          ...existing,
+          at: existing.at || Date.now(),
+          name: cleanName(booking.name),
+          phone: String(booking.phone || "").slice(0, 24),
+          email: String(booking.email || "").slice(0, 80),
+          service: String(booking.service || "").slice(0, 80),
+          bookingId: id,
+        });
+      }
+      return Response.json({ ok: true, id });
+    }
+
+    if (action === "cancel") {
+      const needle = cleanName(payload.name);
+      const released = [];
+      if (!needle) return Response.json({ ok: false, error: "Need a name" }, { status: 400 });
+      const all = await this.state.storage.list();
+      for (const [key, value] of all) {
+        if (!isSlotStorageKey(key)) continue;
+        const storedName = value?.name || "";
+        if (namesMatch(storedName, needle)) {
+          await this.state.storage.delete(key);
+          released.push(key);
+        }
+      }
+      return Response.json({ ok: true, released });
     }
 
     const key = slotKey(payload.date, payload.time);
@@ -172,7 +239,13 @@ export class BookingCalendar {
       if (existing) {
         return Response.json({ ok: false, error: "taken" }, { status: 409 });
       }
-      await this.state.storage.put(key, { at: Date.now() });
+      await this.state.storage.put(key, {
+        at: Date.now(),
+        name: cleanName(payload.name),
+        phone: String(payload.phone || "").slice(0, 24),
+        email: String(payload.email || "").slice(0, 80),
+        service: String(payload.service || "").slice(0, 80),
+      });
       return Response.json({ ok: true, key });
     }
 
@@ -204,7 +277,13 @@ async function cacheCalendar(payload) {
     );
   }
 
-  if (action === "list") return { ok: true, taken: data.taken, status: 200 };
+  if (action === "list") return { ok: true, taken: data.taken, bookings: data.taken, status: 200 };
+  if (action === "get-media" || action === "get-booking" || action === "save-booking") {
+    return { ok: false, error: "Calendar storage is not ready.", status: 503 };
+  }
+  if (action === "cancel") {
+    return { ok: true, released: [], status: 200 };
+  }
 
   const key = slotKey(payload.date, payload.time);
   if (!key || !isValidSlot(payload.date, payload.time)) {
@@ -249,7 +328,7 @@ async function writeGithubBookings(env, taken) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: "Hold booked appointment slot",
+        message: "Update booked appointment slots",
         content: btoa(unescape(encodeURIComponent(body))),
         sha: meta.sha,
         branch,
@@ -290,15 +369,399 @@ async function calendarAction(env, payload) {
   }
   if (!out || out.status === 503) out = await cacheCalendar(payload);
   if ((payload.action || "list") === "list") {
+    if (payload.skipGithub) return { ok: true, taken: out.taken || [], status: 200 };
     const extra = await githubTaken();
     const taken = [...new Set([...(out.taken || []), ...extra])];
     return { ok: true, taken, status: 200 };
   }
-  if (out?.ok && payload.action === "claim") {
-    const listed = await calendarAction(env, { action: "list" });
-    await writeGithubBookings(env, listed.taken || out.taken || []);
+  if (out?.ok && (payload.action === "claim" || payload.action === "release" || payload.action === "cancel")) {
+    const listed = await calendarAction(env, { action: "list", skipGithub: true });
+    await writeGithubBookings(env, listed.taken || []);
   }
   return out;
+}
+
+function workerOrigin(req) {
+  const url = new URL(req.url);
+  return `${url.protocol}//${url.host}`;
+}
+
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function idFor(bookingId, kind) {
+  return `${bookingId}-${kind}`;
+}
+
+function bookingEmailHtml({ booking, origin, hairCid, inspoCid }) {
+  const hairSrc = hairCid ? `cid:${hairCid}` : booking.hairUrl;
+  const inspoSrc = inspoCid ? `cid:${inspoCid}` : booking.inspoUrl;
+  const recap = `${origin}/booking/${encodeURIComponent(booking.id)}`;
+  const hairCaption = booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair";
+  const inspoCaption = booking.inspoKind === "video" ? "Inspiration (video preview)" : "Inspiration";
+  const photoCell = (src, caption) =>
+    src
+      ? `<td style="width:50%;padding:6px;vertical-align:top;">
+          <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
+          <img src="${esc(src)}" alt="${esc(caption)}" width="240" style="display:block;width:100%;max-width:240px;height:auto;border-radius:12px;border:1px solid #3a3a3a;background:#111;">
+        </td>`
+      : `<td style="width:50%;padding:6px;vertical-align:top;">
+          <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
+          <p style="margin:0;font-family:Georgia,serif;color:#bbb;font-size:14px;">No photo sent</p>
+        </td>`;
+  const row = (label, value) =>
+    value
+      ? `<tr>
+          <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#ff4ec8;width:34%;">${esc(label)}</td>
+          <td style="padding:8px 0;font-family:Georgia,serif;font-size:16px;color:#f7f7f7;">${esc(value)}</td>
+        </tr>`
+      : "";
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#0b0b0b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0b;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#141414;border:1px solid #2a2a2a;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 28px 18px;border-bottom:1px solid #2a2a2a;">
+              <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#ff4ec8;">Styled by Tonika</p>
+              <h1 style="margin:0;font-family:Georgia,serif;font-weight:400;font-size:28px;line-height:1.2;color:#ffffff;">New booking</h1>
+              <p style="margin:10px 0 0;font-family:Georgia,serif;font-size:18px;color:#ffb7e6;">${esc(booking.day)} at ${esc(booking.timeLabel)}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 28px 6px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${row("Client", booking.name)}${row("Service", booking.service)}${row("Phone", booking.phone)}${row("Email", booking.email)}${row("Instagram", booking.instagram)}${row("Address", booking.address)}${row("Inspiration link", booking.inspoUrlText)}${row("Notes", booking.notes)}</table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 22px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  ${photoCell(hairSrc, hairCaption)}
+                  ${photoCell(inspoSrc, inspoCaption)}
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 28px 28px;">
+              <a href="${esc(recap)}" style="display:inline-block;background:#ff4ec8;color:#111;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 18px;border-radius:999px;">Open booking with photos</a>
+              <p style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#888;">Photos are included above. If they don’t load in this inbox, tap the button.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function bookingEmailText(booking, origin) {
+  return [
+    "New Styled by Tonika booking",
+    "",
+    `When: ${booking.day} at ${booking.timeLabel}`,
+    `Client: ${booking.name}`,
+    `Service: ${booking.service}`,
+    `Phone: ${booking.phone}`,
+    `Email: ${booking.email}`,
+    `Instagram: ${booking.instagram || "(none)"}`,
+    `Address: ${booking.address || "(none)"}`,
+    `Current hair: ${booking.hairUrl || "(none)"}`,
+    `Inspiration: ${booking.inspoUrl || booking.inspoUrlText || "(none)"}`,
+    `Notes: ${booking.notes || "(none)"}`,
+    "",
+    `Open with photos: ${origin}/booking/${booking.id}`,
+  ].join("\n");
+}
+
+function recapPageHtml(booking, origin) {
+  const hair = booking.hairUrl || "";
+  const inspo = booking.inspoUrl || "";
+  const img = (src, caption) =>
+    src
+      ? `<figure><p class="cap">${esc(caption)}</p><img src="${esc(src)}" alt="${esc(caption)}"></figure>`
+      : `<figure><p class="cap">${esc(caption)}</p><p class="empty">No photo sent</p></figure>`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Booking · ${esc(booking.name)}</title>
+  <style>
+    body{margin:0;background:#050505;color:#fff;font-family:Georgia,serif;}
+    main{max-width:720px;margin:0 auto;padding:28px 18px 48px;}
+    .brand{font-family:Arial,Helvetica,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#ff4ec8;font-size:12px;}
+    h1{font-weight:400;font-size:32px;margin:8px 0 0;}
+    .when{color:#ffb7e6;font-size:20px;margin:8px 0 24px;}
+    dl{display:grid;grid-template-columns:140px 1fr;gap:10px 16px;margin:0 0 28px;}
+    dt{font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ff4ec8;}
+    dd{margin:0;font-size:17px;}
+    .photos{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    img{width:100%;border-radius:14px;border:1px solid #333;background:#111;}
+    .cap{font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ff4ec8;}
+    .empty{color:#999;}
+    a{color:#ff4ec8;}
+    @media (max-width:640px){ .photos, dl{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">Styled by Tonika</p>
+    <h1>${esc(booking.name)}</h1>
+    <p class="when">${esc(booking.day)} at ${esc(booking.timeLabel)}</p>
+    <dl>
+      <dt>Service</dt><dd>${esc(booking.service)}</dd>
+      <dt>Phone</dt><dd>${esc(booking.phone)}</dd>
+      <dt>Email</dt><dd>${esc(booking.email)}</dd>
+      ${booking.instagram ? `<dt>Instagram</dt><dd>${esc(booking.instagram)}</dd>` : ""}
+      ${booking.address ? `<dt>Address</dt><dd>${esc(booking.address)}</dd>` : ""}
+      ${booking.inspoUrlText ? `<dt>Link</dt><dd><a href="${esc(booking.inspoUrlText)}">${esc(booking.inspoUrlText)}</a></dd>` : ""}
+      ${booking.notes ? `<dt>Notes</dt><dd>${esc(booking.notes)}</dd>` : ""}
+    </dl>
+    <div class="photos">
+      ${img(hair, booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair")}
+      ${img(inspo, booking.inspoKind === "video" ? "Inspiration (video preview)" : "Inspiration")}
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
+function blobFromBase64(b64, type) {
+  const bin = atob(String(b64 || ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: type || "image/jpeg" });
+}
+
+async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) {
+  if (!env.EMAIL || typeof env.EMAIL.send !== "function") return false;
+  const hairCid = hair ? "hair-photo" : "";
+  const inspoCid = inspo ? "inspo-photo" : "";
+  const html = bookingEmailHtml({
+    booking: {
+      ...booking,
+      hairUrl: hair ? `${origin}/media/${idFor(booking.id, "hair")}` : "",
+      inspoUrl: inspo ? `${origin}/media/${idFor(booking.id, "inspo")}` : "",
+    },
+    origin,
+    hairCid,
+    inspoCid,
+  });
+  const text = bookingEmailText(booking, origin);
+  const attachments = [];
+  if (hair) {
+    attachments.push({
+      content: hair.b64,
+      filename: hair.filename || "current-hair.jpg",
+      type: hair.type || "image/jpeg",
+      disposition: "inline",
+      contentId: hairCid,
+    });
+  }
+  if (inspo) {
+    attachments.push({
+      content: inspo.b64,
+      filename: inspo.filename || "inspiration.jpg",
+      type: inspo.type || "image/jpeg",
+      disposition: "inline",
+      contentId: inspoCid,
+    });
+  }
+  try {
+    await env.EMAIL.send({
+      to: inbox,
+      from: { email: "bookings@styledbytonika.ca", name: "Styled by Tonika" },
+      replyTo: booking.email,
+      subject: booking.subject,
+      html,
+      text,
+      attachments,
+    });
+    return true;
+  } catch {
+    try {
+      await env.EMAIL.send({
+        to: inbox,
+        from: "bookings@styledbytonika.ca",
+        subject: booking.subject,
+        html,
+        text,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
+  if (!env.RESEND_API_KEY) return false;
+  const html = bookingEmailHtml({
+    booking: {
+      ...booking,
+      hairUrl: hair ? `${origin}/media/${idFor(booking.id, "hair")}` : "",
+      inspoUrl: inspo ? `${origin}/media/${idFor(booking.id, "inspo")}` : "",
+    },
+    origin,
+    hairCid: hair ? "hair-photo" : "",
+    inspoCid: inspo ? "inspo-photo" : "",
+  });
+  const attachments = [];
+  if (hair) attachments.push({ filename: hair.filename || "current-hair.jpg", content: hair.b64, content_id: "hair-photo" });
+  if (inspo) attachments.push({ filename: inspo.filename || "inspiration.jpg", content: inspo.b64, content_id: "inspo-photo" });
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Styled by Tonika <bookings@styledbytonika.ca>",
+      to: [inbox],
+      reply_to: booking.email,
+      subject: booking.subject,
+      html,
+      text: bookingEmailText(booking, origin),
+      attachments,
+    }),
+  });
+  return res.ok;
+}
+
+async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
+  const fd = new FormData();
+  fd.append("_subject", booking.subject);
+  fd.append("_template", "box");
+  fd.append("_replyto", booking.email || inbox);
+  fd.append("Open this booking", `${origin}/booking/${booking.id}`);
+  fd.append("Client", booking.name);
+  fd.append("Service", booking.service);
+  fd.append("When", `${booking.day} at ${booking.timeLabel}`);
+  fd.append("Phone", booking.phone);
+  fd.append("Client email", booking.email);
+  if (booking.instagram) fd.append("Instagram", booking.instagram);
+  if (booking.address) fd.append("Address", booking.address);
+  if (booking.notes) fd.append("Notes", booking.notes);
+  if (booking.inspoUrlText) fd.append("Inspiration link", booking.inspoUrlText);
+  if (hair) fd.append("Current hair photo", `${origin}/media/${idFor(booking.id, "hair")}`);
+  if (inspo) fd.append("Inspiration photo", `${origin}/media/${idFor(booking.id, "inspo")}`);
+  if (hair) fd.append("attachment", blobFromBase64(hair.b64, hair.type), hair.filename || "current-hair.jpg");
+  if (inspo) fd.append("inspiration", blobFromBase64(inspo.b64, inspo.type), inspo.filename || "inspiration.jpg");
+  const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    body: fd,
+  });
+  const out = await res.json().catch(() => ({}));
+  return String(out.success) === "true";
+}
+
+function readInlineMedia(payload, key) {
+  const item = payload[key];
+  if (!item || !item.b64) return null;
+  return {
+    b64: String(item.b64).replace(/^data:[^;]+;base64,/, ""),
+    type: String(item.type || "image/jpeg").slice(0, 80),
+    filename: String(item.filename || `${key}.jpg`).slice(0, 80),
+    kind: String(item.kind || "photo").slice(0, 16),
+  };
+}
+
+async function persistBooking(env, booking, hair, inspo) {
+  if (!env.CALENDAR) return;
+  const stub = calendarStub(env);
+  await stub.fetch("https://calendar/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "save-booking",
+      booking,
+      hair: hair ? { ...hair, id: idFor(booking.id, "hair") } : null,
+      inspo: inspo ? { ...inspo, id: idFor(booking.id, "inspo") } : null,
+    }),
+  });
+}
+
+async function loadStored(env, action, payload) {
+  if (!env.CALENDAR) return null;
+  const stub = calendarStub(env);
+  const res = await stub.fetch("https://calendar/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  return res.json().catch(() => null);
+}
+
+function mediaResponse(media) {
+  if (!media?.b64) return new Response("Missing", { status: 404 });
+  const body = blobFromBase64(media.b64, media.type);
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": media.type || "image/jpeg",
+      "Cache-Control": "public, max-age=604800",
+    },
+  });
+}
+
+async function notifyOwner(req, env, payload) {
+  const origin = workerOrigin(req);
+  const inbox = String(env.OWNER_EMAIL || payload.inbox || "styledbytonika@gmail.com")
+    .trim()
+    .toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
+    return { ok: false, error: "Bad inbox", status: 400 };
+  }
+  const id = String(payload.id || crypto.randomUUID());
+  const hair = readInlineMedia(payload, "hair");
+  const inspo = readInlineMedia(payload, "inspo");
+  const booking = {
+    id,
+    name: cleanName(payload.name),
+    phone: String(payload.phone || "").slice(0, 32),
+    email: String(payload.email || "").slice(0, 80),
+    instagram: String(payload.instagram || "").slice(0, 80),
+    service: String(payload.service || "").slice(0, 80),
+    date: String(payload.date || "").slice(0, 10),
+    time: String(payload.time || "").slice(0, 16),
+    day: String(payload.day || "").slice(0, 80),
+    timeLabel: String(payload.timeLabel || "").slice(0, 40),
+    address: String(payload.address || "").slice(0, 200),
+    notes: String(payload.notes || "").slice(0, 500),
+    inspoUrlText: String(payload.inspoLink || "").slice(0, 300),
+    hairKind: hair?.kind || "",
+    inspoKind: inspo?.kind || "",
+    hairUrl: hair ? `${origin}/media/${idFor(id, "hair")}` : "",
+    inspoUrl: inspo ? `${origin}/media/${idFor(id, "inspo")}` : "",
+    subject: String(payload.subject || `New booking: ${payload.service} — ${payload.day} at ${payload.timeLabel}`).slice(0, 140),
+  };
+  if (!booking.name) return { ok: false, error: "Need a name", status: 400 };
+  await persistBooking(env, booking, hair, inspo);
+  let via = "";
+  if (await sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo)) via = "cloudflare";
+  else if (await sendViaResend(env, inbox, booking, origin, hair, inspo)) via = "resend";
+  else if (await sendViaFormSubmit(inbox, booking, origin, hair, inspo)) via = "formsubmit";
+  if (!via) return { ok: false, error: "Could not send booking email", status: 502, recapUrl: `${origin}/booking/${id}`, hairUrl: booking.hairUrl, inspoUrl: booking.inspoUrl };
+  return {
+    ok: true,
+    via,
+    id,
+    recapUrl: `${origin}/booking/${id}`,
+    hairUrl: booking.hairUrl,
+    inspoUrl: booking.inspoUrl,
+    status: 200,
+  };
 }
 
 async function twilioSend(env, fields) {
@@ -330,6 +793,23 @@ export default {
 
     if (req.method === "GET") {
       const url = new URL(req.url);
+      const mediaId = url.searchParams.get("media") || url.pathname.match(/\/media\/([^/]+)$/)?.[1];
+      const bookingId = url.searchParams.get("booking") || url.pathname.match(/\/booking\/([^/]+)$/)?.[1];
+      if (mediaId) {
+        const out = await loadStored(env, "get-media", { id: decodeURIComponent(mediaId) });
+        if (!out?.ok) return new Response("Photo not found", { status: 404, headers: corsHeaders(origin) });
+        const res = mediaResponse(out.media);
+        Object.entries(corsHeaders(origin)).forEach(([key, value]) => res.headers.set(key, value));
+        return res;
+      }
+      if (bookingId) {
+        const out = await loadStored(env, "get-booking", { id: decodeURIComponent(bookingId) });
+        if (!out?.ok) return new Response("Booking not found", { status: 404, headers: { "Content-Type": "text/plain", ...corsHeaders(origin) } });
+        return new Response(recapPageHtml(out.booking, workerOrigin(req)), {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=utf-8", ...corsHeaders(origin) },
+        });
+      }
       if (url.searchParams.has("slots")) {
         const out = await calendarAction(env, { action: "list" });
         return json(origin, { ok: true, taken: out.taken || [] }, out.status && out.status !== 503 ? out.status : 200);
@@ -347,7 +827,13 @@ export default {
     }
 
     const action = String(payload.action || "");
-    if (action === "claim" || action === "release" || action === "list") {
+    if (action === "notify") {
+      const out = await notifyOwner(req, env, payload);
+      const status = out.status || 200;
+      const { status: _s, ...body } = out;
+      return json(origin, body, status);
+    }
+    if (action === "claim" || action === "release" || action === "list" || action === "cancel") {
       const out = await calendarAction(env, payload);
       const status = out.status || 200;
       const { status: _s, ...body } = out;
