@@ -731,7 +731,7 @@ async function notifyOwner(req, env, payload) {
     instagram: String(payload.instagram || "").slice(0, 80),
     service: String(payload.service || "").slice(0, 80),
     date: String(payload.date || "").slice(0, 10),
-    time: String(payload.time || "").slice(0, 16),
+    time: String(payload.time || payload.slotTime || "").slice(0, 16),
     day: String(payload.day || "").slice(0, 80),
     timeLabel: String(payload.timeLabel || "").slice(0, 40),
     address: String(payload.address || "").slice(0, 200),

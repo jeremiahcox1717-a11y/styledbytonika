@@ -713,7 +713,7 @@ if (dateInput && timeSelect && form) {
       instagram: data.instagram || "",
       service: data.service,
       date: data.date,
-      time: data.time,
+      slotTime: data.time,
       day,
       timeLabel,
       address: where,
