@@ -455,6 +455,20 @@ if (dateInput && timeSelect && form) {
     return String(file?.type || "").startsWith("video/") || /\.(mp4|mov|m4v|webm|3gp|hevc)$/i.test(file?.name || "");
   }
 
+  function isHeicFile(file) {
+    const type = String(file?.type || "").toLowerCase();
+    const name = String(file?.name || "").toLowerCase();
+    return type.includes("heic") || type.includes("heif") || /\.hei[cf]$/i.test(name);
+  }
+
+  function jpegName(file, fallback) {
+    const base = String(file?.name || fallback || "photo")
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^\w.-]+/g, "-")
+      .slice(0, 60);
+    return `${base || fallback || "photo"}.jpg`;
+  }
+
   function mediaKind(file) {
     return isVideoFile(file) ? "video" : "photo";
   }
@@ -608,30 +622,80 @@ if (dateInput && timeSelect && form) {
     const buf = await blob.arrayBuffer();
     return {
       b64: arrayBufferToBase64(buf),
-      type: blob.type || "image/jpeg",
-      filename: filename || "photo.jpg",
+      type: "image/jpeg",
+      filename: jpegName({ name: filename }, "photo"),
       kind: kind || "photo",
     };
   }
 
-  async function compressImageFile(file) {
-    let bitmap = null;
+  function loadHeicConverter() {
+    if (typeof window.heic2any === "function") return Promise.resolve(window.heic2any);
+    if (window.__heic2anyLoading) return window.__heic2anyLoading;
+    window.__heic2anyLoading = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+      script.onload = () => resolve(window.heic2any);
+      script.onerror = () => reject(new Error("HEIC converter failed"));
+      document.head.appendChild(script);
+    });
+    return window.__heic2anyLoading;
+  }
+
+  async function bitmapFromFile(file) {
     try {
-      bitmap = await createImageBitmap(file);
+      return await createImageBitmap(file);
     } catch {
-      bitmap = null;
+      /* try element decode */
     }
-    if (!bitmap) return blobToInline(file, file.name, "photo");
-    const maxEdge = 1000;
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          const bitmap = await createImageBitmap(img);
+          URL.revokeObjectURL(url);
+          resolve(bitmap);
+        } catch {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  }
+
+  function canvasToJpeg(bitmap, maxEdge, quality) {
     const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  }
+
+  async function compressImageFile(file) {
+    let source = file;
+    if (isHeicFile(file)) {
+      try {
+        const convert = await loadHeicConverter();
+        const out = await convert({ blob: file, toType: "image/jpeg", quality: 0.8 });
+        const jpeg = Array.isArray(out) ? out[0] : out;
+        if (jpeg) source = new File([jpeg], jpegName(file, "photo"), { type: "image/jpeg" });
+      } catch {
+        source = file;
+      }
+    }
+    const bitmap = await bitmapFromFile(source);
+    if (!bitmap) return blobToInline(source, jpegName(file, "photo"), "photo");
+    let blob = await canvasToJpeg(bitmap, 720, 0.72);
+    if (blob && blob.size > 90000) blob = await canvasToJpeg(bitmap, 560, 0.6);
+    if (blob && blob.size > 90000) blob = await canvasToJpeg(bitmap, 480, 0.52);
     bitmap.close?.();
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.74));
-    const name = String(file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
-    return blobToInline(blob || file, name, "photo");
+    return blobToInline(blob || source, jpegName(file, "photo"), "photo");
   }
 
   async function videoPoster(file) {
@@ -650,7 +714,7 @@ if (dateInput && timeSelect && form) {
           resolve(null);
           return;
         }
-        const name = String(file.name || "video").replace(/\.[^.]+$/, "") + "-preview.jpg";
+        const name = jpegName(file, "video").replace(/\.jpg$/, "-preview.jpg");
         resolve(await blobToInline(blob, name, "video"));
       };
       video.onerror = () => done(null);
@@ -727,12 +791,18 @@ if (dateInput && timeSelect && form) {
     fd.append("Service", data.service);
     fd.append("When", `${day} at ${timeLabel}`);
     fd.append("Address", where || "(none)");
-    if (extras.hairUrl) fd.append("Current hair photo", extras.hairUrl);
-    if (extras.inspoUrl) fd.append("Inspiration photo", extras.inspoUrl);
+    if (extras.hairUrl) fd.append("Current hair photo link", extras.hairUrl);
+    if (extras.inspoUrl) fd.append("Inspiration photo link", extras.inspoUrl);
     fd.append("Inspiration link", data["inspo-url"] || "(none)");
     fd.append("Notes", data.notes || "(none)");
-    if (extras.hairBlob) fd.append("attachment", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
-    if (extras.inspoBlob) fd.append("inspiration", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
+    if (extras.hairBlob) {
+      fd.append("current_hair_photo", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
+      fd.append("attachment", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
+    }
+    if (extras.inspoBlob) {
+      fd.append("inspiration_photo", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
+      fd.append("file", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
+    }
     const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
       method: "POST",
       headers: { Accept: "application/json" },
@@ -748,7 +818,11 @@ if (dateInput && timeSelect && form) {
     const bin = atob(inline.b64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-    return new File([bytes], inline.filename || "photo.jpg", { type: inline.type || "image/jpeg" });
+    return new File([bytes], jpegName({ name: inline.filename }, "photo"), { type: "image/jpeg" });
+  }
+
+  function photosInEmail(via) {
+    return via === "resend" || via === "cloudflare";
   }
 
   async function sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile) {
@@ -788,9 +862,22 @@ if (dateInput && timeSelect && form) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           },
-          25000
+          35000
         );
         if (res.ok && out.ok) {
+          if ((hair || inspo) && !photosInEmail(out.via)) {
+            try {
+              return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
+                recapUrl: out.recapUrl,
+                hairUrl: out.hairUrl,
+                inspoUrl: out.inspoUrl,
+                hairBlob: inlineToBlob(hair),
+                inspoBlob: inlineToBlob(inspo),
+              });
+            } catch {
+              return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
+            }
+          }
           return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
         }
         if (out.recapUrl) {

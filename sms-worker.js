@@ -573,86 +573,184 @@ function recapPageHtml(booking, origin) {
 </html>`;
 }
 
-function blobFromBase64(b64, type) {
+function bytesFromBase64(b64) {
   const bin = atob(String(b64 || ""));
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: type || "image/jpeg" });
+  return bytes;
+}
+
+function blobFromBase64(b64, type) {
+  return new Blob([bytesFromBase64(b64)], { type: type || "image/jpeg" });
+}
+
+function jpegFilename(name, fallback) {
+  const base = String(name || fallback || "photo")
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^\w.-]+/g, "-")
+    .slice(0, 60);
+  return `${base || fallback || "photo"}.jpg`;
+}
+
+function fileFromMedia(media, fallback) {
+  if (!media?.b64) return null;
+  const filename = jpegFilename(media.filename, fallback);
+  return new File([bytesFromBase64(media.b64)], filename, { type: "image/jpeg" });
+}
+
+function wrap76(value) {
+  return String(value || "").replace(/(.{76})/g, "$1\r\n");
+}
+
+function encodedSubject(subject) {
+  const bytes = new TextEncoder().encode(String(subject || "New booking"));
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return `=?UTF-8?B?${btoa(binary)}?=`;
+}
+
+function buildRawMime({ from, to, replyTo, subject, html, text, hair, inspo }) {
+  const mix = `mix_${crypto.randomUUID()}`;
+  const rel = `rel_${crypto.randomUUID()}`;
+  const alt = `alt_${crypto.randomUUID()}`;
+  const parts = [
+    `From: Styled by Tonika <${from}>`,
+    `To: ${to}`,
+    replyTo ? `Reply-To: ${replyTo}` : "",
+    `Subject: ${encodedSubject(subject)}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${mix}"`,
+    "",
+    `--${mix}`,
+    `Content-Type: multipart/related; boundary="${rel}"`,
+    "",
+    `--${rel}`,
+    `Content-Type: multipart/alternative; boundary="${alt}"`,
+    "",
+    `--${alt}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: 7bit",
+    "",
+    text,
+    `--${alt}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: 7bit",
+    "",
+    html,
+    `--${alt}--`,
+  ];
+  const inline = [
+    hair && { media: hair, cid: "hair-photo", filename: jpegFilename(hair.filename, "current-hair") },
+    inspo && { media: inspo, cid: "inspo-photo", filename: jpegFilename(inspo.filename, "inspiration") },
+  ].filter(Boolean);
+  inline.forEach((item) => {
+    parts.push(
+      `--${rel}`,
+      `Content-Type: image/jpeg; name="${item.filename}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-ID: <${item.cid}>`,
+      `Content-Disposition: inline; filename="${item.filename}"`,
+      "",
+      wrap76(item.media.b64)
+    );
+  });
+  parts.push(`--${rel}--`);
+  inline.forEach((item) => {
+    parts.push(
+      `--${mix}`,
+      `Content-Type: image/jpeg; name="${item.filename}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${item.filename}"`,
+      "",
+      wrap76(item.media.b64)
+    );
+  });
+  parts.push(`--${mix}--`, "");
+  return parts.filter((line, i, arr) => line !== "" || arr[i - 1] !== "").join("\r\n");
+}
+
+  function emailHtml(booking, origin, hair, inspo, useCid) {
+  return bookingEmailHtml({
+    booking,
+    origin,
+    hairCid: useCid && hair ? "hair-photo" : "",
+    inspoCid: useCid && inspo ? "inspo-photo" : "",
+  });
 }
 
 async function sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo) {
-  if (!env.EMAIL || typeof env.EMAIL.send !== "function") return false;
-  const htmlWithCid = bookingEmailHtml({
-    booking,
-    origin,
-    hairCid: hair ? "hair-photo" : "",
-    inspoCid: inspo ? "inspo-photo" : "",
-  });
-  const htmlWithUrls = bookingEmailHtml({
-    booking,
-    origin,
-    hairCid: "",
-    inspoCid: "",
-  });
+  const from = env.BOOKING_FROM || "bookings@styledbytonika.ca";
+  const html = emailHtml(booking, origin, hair, inspo, true);
   const text = bookingEmailText(booking, origin);
-  const attachments = [];
-  if (hair) {
-    attachments.push({
-      content: hair.b64,
-      filename: hair.filename || "current-hair.jpg",
-      type: hair.type || "image/jpeg",
-      disposition: "inline",
-      contentId: "hair-photo",
-    });
-  }
-  if (inspo) {
-    attachments.push({
-      content: inspo.b64,
-      filename: inspo.filename || "inspiration.jpg",
-      type: inspo.type || "image/jpeg",
-      disposition: "inline",
-      contentId: "inspo-photo",
-    });
-  }
-  const from = { email: "bookings@styledbytonika.ca", name: "Styled by Tonika" };
-  try {
-    await env.EMAIL.send({
-      to: inbox,
-      from,
-      replyTo: booking.email,
-      subject: booking.subject,
-      html: htmlWithCid,
-      text,
-      attachments,
-    });
-    return true;
-  } catch {
+  const raw = buildRawMime({
+    from,
+    to: inbox,
+    replyTo: booking.email,
+    subject: booking.subject,
+    html,
+    text,
+    hair,
+    inspo,
+  });
+  const senders = [env.SEB, env.EMAIL].filter((item) => item && typeof item.send === "function");
+  for (const sender of senders) {
     try {
-      await env.EMAIL.send({
-        to: inbox,
-        from: "bookings@styledbytonika.ca",
-        subject: booking.subject,
-        html: htmlWithUrls,
-        text,
-      });
+      const { EmailMessage } = await import("cloudflare:email");
+      await sender.send(new EmailMessage(from, inbox, raw));
       return true;
     } catch {
-      return false;
+      try {
+        await sender.send({
+          to: inbox,
+          from: { email: from, name: "Styled by Tonika" },
+          replyTo: booking.email,
+          subject: booking.subject,
+          html,
+          text,
+          attachments: [
+            hair && {
+              content: hair.b64,
+              filename: jpegFilename(hair.filename, "current-hair"),
+              type: "image/jpeg",
+              disposition: "inline",
+              contentId: "hair-photo",
+            },
+            inspo && {
+              content: inspo.b64,
+              filename: jpegFilename(inspo.filename, "inspiration"),
+              type: "image/jpeg",
+              disposition: "inline",
+              contentId: "inspo-photo",
+            },
+          ].filter(Boolean),
+        });
+        return true;
+      } catch {
+        /* try next sender */
+      }
     }
   }
+  return false;
+}
+
+function resendAttachment(media, filename, cid) {
+  return {
+    filename,
+    content: media.b64,
+    content_type: "image/jpeg",
+    content_id: cid,
+  };
 }
 
 async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
   if (!env.RESEND_API_KEY) return false;
-  const html = bookingEmailHtml({
-    booking,
-    origin,
-    hairCid: hair ? "hair-photo" : "",
-    inspoCid: inspo ? "inspo-photo" : "",
-  });
+  const from = env.RESEND_FROM || "Styled by Tonika <bookings@styledbytonika.ca>";
+  const html = emailHtml(booking, origin, hair, inspo, true);
   const attachments = [];
-  if (hair) attachments.push({ filename: hair.filename || "current-hair.jpg", content: hair.b64, content_id: "hair-photo" });
-  if (inspo) attachments.push({ filename: inspo.filename || "inspiration.jpg", content: inspo.b64, content_id: "inspo-photo" });
+  if (hair) attachments.push(resendAttachment(hair, jpegFilename(hair.filename, "current-hair"), "hair-photo"));
+  if (inspo) attachments.push(resendAttachment(inspo, jpegFilename(inspo.filename, "inspiration"), "inspo-photo"));
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -660,7 +758,7 @@ async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Styled by Tonika <bookings@styledbytonika.ca>",
+      from,
       to: [inbox],
       reply_to: booking.email,
       subject: booking.subject,
@@ -669,7 +767,25 @@ async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
       attachments,
     }),
   });
-  return res.ok;
+  if (res.ok) return true;
+  if (!attachments.length) return false;
+  const retry = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [inbox],
+      reply_to: booking.email,
+      subject: booking.subject,
+      html: emailHtml(booking, origin, hair, inspo, false),
+      text: bookingEmailText(booking, origin),
+      attachments: attachments.map(({ content_id: _cid, ...rest }) => rest),
+    }),
+  });
+  return retry.ok;
 }
 
 async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
@@ -687,10 +803,12 @@ async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
   if (booking.address) fd.append("Address", booking.address);
   if (booking.notes) fd.append("Notes", booking.notes);
   if (booking.inspoUrlText) fd.append("Inspiration link", booking.inspoUrlText);
-  if (hair) fd.append("Current hair photo", `${origin}/media/${idFor(booking.id, "hair")}`);
-  if (inspo) fd.append("Inspiration photo", `${origin}/media/${idFor(booking.id, "inspo")}`);
-  if (hair) fd.append("attachment", blobFromBase64(hair.b64, hair.type), hair.filename || "current-hair.jpg");
-  if (inspo) fd.append("inspiration", blobFromBase64(inspo.b64, inspo.type), inspo.filename || "inspiration.jpg");
+  if (hair) fd.append("Current hair photo link", booking.hairUrl);
+  if (inspo) fd.append("Inspiration photo link", booking.inspoUrl);
+  const hairFile = fileFromMedia(hair, "current-hair");
+  const inspoFile = fileFromMedia(inspo, "inspiration");
+  if (hairFile) fd.append("current_hair_photo", hairFile, hairFile.name);
+  if (inspoFile) fd.append("inspiration_photo", inspoFile, inspoFile.name);
   const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
     method: "POST",
     headers: { Accept: "application/json" },
@@ -703,27 +821,32 @@ async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
 function readInlineMedia(payload, key) {
   const item = payload[key];
   if (!item || !item.b64) return null;
+  const filename = jpegFilename(item.filename, key === "inspo" ? "inspiration" : "current-hair");
   return {
     b64: String(item.b64).replace(/^data:[^;]+;base64,/, ""),
-    type: String(item.type || "image/jpeg").slice(0, 80),
-    filename: String(item.filename || `${key}.jpg`).slice(0, 80),
+    type: "image/jpeg",
+    filename,
     kind: String(item.kind || "photo").slice(0, 16),
   };
 }
 
 async function persistBooking(env, booking, hair, inspo) {
   if (!env.CALENDAR) return;
-  const stub = calendarStub(env);
-  await stub.fetch("https://calendar/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "save-booking",
-      booking,
-      hair: hair ? { ...hair, id: idFor(booking.id, "hair") } : null,
-      inspo: inspo ? { ...inspo, id: idFor(booking.id, "inspo") } : null,
-    }),
-  });
+  try {
+    const stub = calendarStub(env);
+    await stub.fetch("https://calendar/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save-booking",
+        booking,
+        hair: hair ? { ...hair, id: idFor(booking.id, "hair") } : null,
+        inspo: inspo ? { ...inspo, id: idFor(booking.id, "inspo") } : null,
+      }),
+    });
+  } catch {
+    /* email can still carry the photos */
+  }
 }
 
 async function loadStored(env, action, payload) {
@@ -782,11 +905,21 @@ async function notifyOwner(req, env, payload) {
   };
   if (!booking.name) return { ok: false, error: "Need a name", status: 400 };
   await persistBooking(env, booking, hair, inspo);
+  const hasPhotos = Boolean(hair || inspo);
   let via = "";
   if (await sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo)) via = "cloudflare";
   else if (await sendViaResend(env, inbox, booking, origin, hair, inspo)) via = "resend";
-  else if (await sendViaFormSubmit(inbox, booking, origin, hair, inspo)) via = "formsubmit";
-  if (!via) return { ok: false, error: "Could not send booking email", status: 502, recapUrl: `${origin}/booking/${id}`, hairUrl: booking.hairUrl, inspoUrl: booking.inspoUrl };
+  else if (!hasPhotos && (await sendViaFormSubmit(inbox, booking, origin, hair, inspo))) via = "formsubmit";
+  if (!via) {
+    return {
+      ok: false,
+      error: "Could not send booking email",
+      status: 502,
+      recapUrl: `${origin}/booking/${id}`,
+      hairUrl: booking.hairUrl,
+      inspoUrl: booking.inspoUrl,
+    };
+  }
   return {
     ok: true,
     via,
