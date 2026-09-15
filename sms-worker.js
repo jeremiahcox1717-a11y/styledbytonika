@@ -618,7 +618,9 @@ function buildRawMime({ from, to, replyTo, subject, html, text, hair, inspo }) {
   const parts = [
     `From: Styled by Tonika <${from}>`,
     `To: ${to}`,
-    replyTo ? `Reply-To: ${replyTo}` : "",
+  ];
+  if (replyTo) parts.push(`Reply-To: ${replyTo}`);
+  parts.push(
     `Subject: ${encodedSubject(subject)}`,
     "MIME-Version: 1.0",
     `Content-Type: multipart/mixed; boundary="${mix}"`,
@@ -639,8 +641,8 @@ function buildRawMime({ from, to, replyTo, subject, html, text, hair, inspo }) {
     "Content-Transfer-Encoding: 7bit",
     "",
     html,
-    `--${alt}--`,
-  ];
+    `--${alt}--`
+  );
   const inline = [
     hair && { media: hair, cid: "hair-photo", filename: jpegFilename(hair.filename, "current-hair") },
     inspo && { media: inspo, cid: "inspo-photo", filename: jpegFilename(inspo.filename, "inspiration") },
@@ -668,10 +670,10 @@ function buildRawMime({ from, to, replyTo, subject, html, text, hair, inspo }) {
     );
   });
   parts.push(`--${mix}--`, "");
-  return parts.filter((line, i, arr) => line !== "" || arr[i - 1] !== "").join("\r\n");
+  return parts.join("\r\n");
 }
 
-  function emailHtml(booking, origin, hair, inspo, useCid) {
+function emailHtml(booking, origin, hair, inspo, useCid) {
   return bookingEmailHtml({
     booking,
     origin,
