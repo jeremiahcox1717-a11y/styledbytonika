@@ -182,7 +182,7 @@ export class BookingCalendar {
     }
 
     if (action === "get-media") {
-      const media = await this.state.storage.get(`m:${payload.id}`);
+      const media = await readMedia(this.state.storage, payload.id);
       if (!media) return Response.json({ ok: false, error: "missing" }, { status: 404 });
       return Response.json({ ok: true, media });
     }
@@ -197,8 +197,8 @@ export class BookingCalendar {
       const booking = payload.booking || {};
       const id = String(booking.id || "").slice(0, 80);
       if (!id) return Response.json({ ok: false, error: "Need booking id" }, { status: 400 });
-      if (payload.hair) await this.state.storage.put(`m:${id}-hair`, payload.hair);
-      if (payload.inspo) await this.state.storage.put(`m:${id}-inspo`, payload.inspo);
+      if (payload.hair) await writeMedia(this.state.storage, `${id}-hair`, payload.hair);
+      if (payload.inspo) await writeMedia(this.state.storage, `${id}-inspo`, payload.inspo);
       await this.state.storage.put(`b:${id}`, booking);
       const key = slotKey(booking.date, booking.time);
       if (key) {
@@ -401,22 +401,64 @@ function idFor(bookingId, kind) {
   return `${bookingId}-${kind}`;
 }
 
-function bookingEmailHtml({ booking, origin, hairCid, inspoCid }) {
-  const hairSrc = hairCid ? `cid:${hairCid}` : booking.hairUrl;
-  const inspoSrc = inspoCid ? `cid:${inspoCid}` : booking.inspoUrl;
+const MEDIA_CHUNK = 90000;
+
+async function writeMedia(storage, id, media) {
+  if (!media?.b64) return;
+  const b64 = String(media.b64);
+  const chunks = Math.max(1, Math.ceil(b64.length / MEDIA_CHUNK));
+  await storage.put(`m:${id}`, {
+    type: media.type || "image/jpeg",
+    filename: media.filename || `${id}.jpg`,
+    kind: media.kind || "photo",
+    chunks,
+  });
+  for (let i = 0; i < chunks; i += 1) {
+    await storage.put(`m:${id}:${i}`, b64.slice(i * MEDIA_CHUNK, (i + 1) * MEDIA_CHUNK));
+  }
+}
+
+async function readMedia(storage, id) {
+  const meta = await storage.get(`m:${id}`);
+  if (!meta) return null;
+  if (meta.b64) return meta;
+  const chunks = Number(meta.chunks || 0);
+  if (!chunks) return null;
+  let b64 = "";
+  for (let i = 0; i < chunks; i += 1) {
+    b64 += (await storage.get(`m:${id}:${i}`)) || "";
+  }
+  if (!b64) return null;
+  return { ...meta, b64 };
+}
+
+function photoSrc({ cid, url, data }) {
+  if (cid) return `cid:${cid}`;
+  if (data?.b64) return `data:${data.type || "image/jpeg"};base64,${data.b64}`;
+  return url || "";
+}
+
+function bookingEmailHtml({ booking, origin, hairCid, inspoCid, hair, inspo }) {
+  const hairSrc = photoSrc({ cid: hairCid, url: booking.hairUrl, data: hair });
+  const inspoSrc = photoSrc({ cid: inspoCid, url: booking.inspoUrl, data: inspo });
   const recap = `${origin}/booking/${encodeURIComponent(booking.id)}`;
-  const hairCaption = booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair";
-  const inspoCaption = booking.inspoKind === "video" ? "Inspiration (video preview)" : "Inspiration";
-  const photoCell = (src, caption) =>
+  const hairCaption = booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair / length";
+  const inspoCaption = booking.inspoKind === "video" ? "Style they want (video preview)" : "Style they want";
+  const photoBlock = (src, caption, url) =>
     src
-      ? `<td style="width:50%;padding:6px;vertical-align:top;">
-          <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
-          <img src="${esc(src)}" alt="${esc(caption)}" width="240" style="display:block;width:100%;max-width:240px;height:auto;border-radius:12px;border:1px solid #3a3a3a;background:#111;">
-        </td>`
-      : `<td style="width:50%;padding:6px;vertical-align:top;">
-          <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
-          <p style="margin:0;font-family:Georgia,serif;color:#bbb;font-size:14px;">No photo sent</p>
-        </td>`;
+      ? `<tr>
+          <td style="padding:12px 28px 6px;">
+            <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
+            <img src="${esc(src)}" alt="${esc(caption)}" width="480" style="display:block;width:100%;max-width:480px;height:auto;border-radius:12px;border:1px solid #3a3a3a;background:#111;">
+            ${url ? `<p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;"><a href="${esc(url)}" style="color:#ff4ec8;">Open ${esc(caption)} photo</a></p>` : ""}
+          </td>
+        </tr>`
+      : `<tr>
+          <td style="padding:12px 28px 6px;">
+            <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#ff4ec8;font-weight:700;">${esc(caption)}</p>
+            <p style="margin:0;font-family:Georgia,serif;color:#bbb;font-size:14px;">No photo sent</p>
+          </td>
+        </tr>`;
   const row = (label, value) =>
     value
       ? `<tr>
@@ -443,20 +485,12 @@ function bookingEmailHtml({ booking, origin, hairCid, inspoCid }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${row("Client", booking.name)}${row("Service", booking.service)}${row("Phone", booking.phone)}${row("Email", booking.email)}${row("Instagram", booking.instagram)}${row("Address", booking.address)}${row("Inspiration link", booking.inspoUrlText)}${row("Notes", booking.notes)}</table>
             </td>
           </tr>
-          <tr>
-            <td style="padding:10px 22px 8px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  ${photoCell(hairSrc, hairCaption)}
-                  ${photoCell(inspoSrc, inspoCaption)}
-                </tr>
-              </table>
-            </td>
-          </tr>
+          ${photoBlock(hairSrc, hairCaption, booking.hairUrl)}
+          ${photoBlock(inspoSrc, inspoCaption, booking.inspoUrl)}
           <tr>
             <td style="padding:8px 28px 28px;">
               <a href="${esc(recap)}" style="display:inline-block;background:#ff4ec8;color:#111;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 18px;border-radius:999px;">Open booking with photos</a>
-              <p style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#888;">Photos are included above. If they don’t load in this inbox, tap the button.</p>
+              <p style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#888;">Both photos are in this email and attached. If an image is blank, tap the links above or this button.</p>
             </td>
           </tr>
         </table>
@@ -531,8 +565,8 @@ function recapPageHtml(booking, origin) {
       ${booking.notes ? `<dt>Notes</dt><dd>${esc(booking.notes)}</dd>` : ""}
     </dl>
     <div class="photos">
-      ${img(hair, booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair")}
-      ${img(inspo, booking.inspoKind === "video" ? "Inspiration (video preview)" : "Inspiration")}
+      ${img(hair, booking.hairKind === "video" ? "Current hair (video preview)" : "Current hair / length")}
+      ${img(inspo, booking.inspoKind === "video" ? "Style they want (video preview)" : "Style they want")}
     </div>
   </main>
 </body>
