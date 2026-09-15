@@ -1132,10 +1132,16 @@ select {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.82);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   z-index: 80;
-  padding: 1.5rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .modal[hidden] {
@@ -1144,6 +1150,7 @@ select {
 
 .modal-card {
   width: min(100%, 28rem);
+  margin: auto;
   background: #0b0b0b;
   border: 1px solid rgba(255, 255, 255, 0.28);
   padding: 2.4rem 1.8rem;
@@ -1160,10 +1167,32 @@ select {
 }
 
 .booked-card {
+  position: relative;
   width: min(100%, 34rem);
   padding: 2.5rem 1.7rem 2rem;
   border: 1px solid rgba(255, 78, 200, 0.4);
   box-shadow: 0 0 48px rgba(255, 78, 200, 0.16);
+}
+
+.booked-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 1.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.booked-close:hover,
+.booked-close:focus-visible {
+  color: var(--neon);
 }
 
 .booked-card p {

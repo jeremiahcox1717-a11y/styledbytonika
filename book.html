@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=70" />
+  <link rel="stylesheet" href="styles.css?v=71" />
 </head>
 <body class="book-page">
   <header class="book-top">
@@ -165,6 +165,9 @@
 
   <div class="modal" id="success-modal" hidden>
     <div class="modal-card booked-card" role="dialog" aria-labelledby="success-title" aria-modal="true">
+      <button type="button" class="booked-close" id="booked-close" aria-label="Close">
+        <span aria-hidden="true">×</span>
+      </button>
       <p class="booked-check" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <circle cx="12" cy="12" r="10"/>
@@ -174,13 +177,16 @@
       <p class="kicker">Appointment requested</p>
       <h2 class="neon" id="success-title">You’re booked</h2>
       <div id="success-copy" class="booked-recap"></div>
-      <p class="booked-note">Tonika has your request. You’ll get a text or email to confirm.</p>
-      <a class="submit" href="index.html">Back to home</a>
+      <p class="booked-note">A confirmation text is on the way. Tonika has your request.</p>
+      <div class="booked-actions">
+        <button type="button" class="submit" id="booked-done">Done</button>
+        <a class="booked-home" href="index.html">Back to home</a>
+      </div>
     </div>
   </div>
 
   <script src="site-content.js?v=11"></script>
-  <script src="script.js?v=21"></script>
+  <script src="script.js?v=22"></script>
 </body>
 </html>
 

@@ -933,6 +933,106 @@ async function notifyOwner(req, env, payload) {
   };
 }
 
+function appointmentLabels(dateStr, clock) {
+  const startUtc = appointmentUtc(dateStr, clock.h, clock.min);
+  if (!startUtc) return null;
+  const day = new Date(startUtc).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: TZ,
+  });
+  const timeLabel = new Date(startUtc).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: TZ,
+  });
+  return { startUtc, day, timeLabel };
+}
+
+async function sendBookingTexts(env, payload) {
+  const name = cleanName(payload.name);
+  const phone = toE164(payload.phone);
+  const dateStr = String(payload.date || "");
+  const clock = parseClock(payload.time);
+  const service = String(payload.service || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const hours = Math.min(24, Math.max(1, Number(env.REMINDER_HOURS || payload.hours || 3)));
+  const wantConfirm = payload.confirm !== false;
+  const wantRemind = payload.remind === true;
+
+  if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !clock) {
+    return { ok: false, error: "Need name, phone, date, and time", status: 400 };
+  }
+  if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_MESSAGING_SERVICE_SID) {
+    return { ok: false, error: "SMS is not configured", status: 500 };
+  }
+
+  const when = appointmentLabels(dateStr, clock);
+  if (!when) return { ok: false, error: "Bad appointment time", status: 400 };
+
+  const styleBit = service ? `${service} ` : "";
+  const confirmBody = `Hi ${name}, you're booked with Styled by Tonika! ${styleBit}on ${when.day} at ${when.timeLabel}. See you then!`;
+  const remindBody = service
+    ? `Hi ${name}, Styled by Tonika reminder: your ${service} appointment is ${when.day} at ${when.timeLabel}. See you soon!`
+    : `Hi ${name}, Styled by Tonika reminder: your appointment is ${when.day} at ${when.timeLabel}. See you soon!`;
+
+  let confirmed = false;
+  let reminded = false;
+  let remindLabel = "";
+  let error = "";
+
+  if (wantConfirm) {
+    try {
+      await twilioSend(env, {
+        To: phone,
+        Body: confirmBody,
+        MessagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID,
+      });
+      confirmed = true;
+    } catch (err) {
+      error = String(err.message || err);
+    }
+  }
+
+  if (wantRemind && when.startUtc > Date.now() + 10 * 60 * 1000) {
+    try {
+      const sendAt = when.startUtc - hours * 60 * 60 * 1000;
+      const fields = {
+        To: phone,
+        Body: remindBody,
+        MessagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID,
+      };
+      const fifteen = Date.now() + 15 * 60 * 1000;
+      if (sendAt > fifteen) {
+        fields.ScheduleType = "fixed";
+        fields.SendAt = new Date(sendAt).toISOString();
+      }
+      await twilioSend(env, fields);
+      reminded = true;
+      remindLabel = new Date(Math.max(sendAt, Date.now())).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: TZ,
+      });
+    } catch (err) {
+      error = error || String(err.message || err);
+    }
+  }
+
+  if (!confirmed && !reminded) {
+    return { ok: false, error: error || "Could not send text", status: 502 };
+  }
+  return {
+    ok: true,
+    confirmed,
+    reminded,
+    remindLabel,
+    day: when.day,
+    timeLabel: when.timeLabel,
+    status: 200,
+  };
+}
+
 async function twilioSend(env, fields) {
   const params = new URLSearchParams(fields);
   const res = await fetch(
@@ -1008,60 +1108,20 @@ export default {
       const { status: _s, ...body } = out;
       return json(origin, body, status);
     }
-
-    const name = cleanName(payload.name);
-    const phone = toE164(payload.phone);
-    const dateStr = String(payload.date || "");
-    const clock = parseClock(payload.time);
-    const hours = Math.min(24, Math.max(1, Number(env.REMINDER_HOURS || payload.hours || 3)));
-
-    if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !clock) {
-      return json(origin, { error: "Need name, phone, date, and time" }, 400);
-    }
-    if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_MESSAGING_SERVICE_SID) {
-      return json(origin, { error: "SMS is not configured" }, 500);
-    }
-
-    const startUtc = appointmentUtc(dateStr, clock.h, clock.min);
-    if (!startUtc) return json(origin, { error: "Bad appointment time" }, 400);
-    if (startUtc <= Date.now() + 10 * 60 * 1000) {
-      return json(origin, { error: "That time is too soon to schedule a reminder" }, 400);
-    }
-
-    const sendAt = startUtc - hours * 60 * 60 * 1000;
-    const day = new Date(startUtc).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      timeZone: TZ,
-    });
-    const timeLabel = new Date(startUtc).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: TZ,
-    });
-    const body = `Hi ${name}, Styled by Tonika reminder: your appointment is ${day} at ${timeLabel}. See you soon!`;
-
-    try {
-      const fields = {
-        To: phone,
-        Body: body,
-        MessagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID,
-      };
-      const fifteen = Date.now() + 15 * 60 * 1000;
-      if (sendAt > fifteen) {
-        fields.ScheduleType = "fixed";
-        fields.SendAt = new Date(sendAt).toISOString();
-      }
-      await twilioSend(env, fields);
-      const remindLabel = new Date(Math.max(sendAt, Date.now())).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        timeZone: TZ,
+    if (action === "sms" || action === "confirm") {
+      const out = await sendBookingTexts(env, {
+        ...payload,
+        confirm: payload.confirm !== false,
+        remind: payload.remind === true,
       });
-      return json(origin, { ok: true, sendAt: new Date(sendAt).toISOString(), remindLabel, day, timeLabel });
-    } catch (err) {
-      return json(origin, { error: String(err.message || err) }, 502);
+      const status = out.status || 200;
+      const { status: _s, ...body } = out;
+      return json(origin, body, status);
     }
+
+    const out = await sendBookingTexts(env, { ...payload, confirm: false, remind: true });
+    const status = out.status || 200;
+    const { status: _s, ...body } = out;
+    return json(origin, body, status);
   },
 };
