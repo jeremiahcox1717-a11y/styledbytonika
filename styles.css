@@ -1263,6 +1263,42 @@ select {
   margin-bottom: 1.4rem;
 }
 
+.booked-actions {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.booked-actions .submit {
+  width: 100%;
+}
+
+.booked-home {
+  display: inline-block;
+  color: #f0c9d6;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  font-family: var(--display);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html.modal-open,
+body.modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .booked-card {
+    padding: 2.1rem 1.15rem 1.4rem;
+  }
+
+  .booked-card h2 {
+    font-size: clamp(2.2rem, 11vw, 3.2rem);
+    margin: 0.1rem 0 0.9rem;
+  }
+}
+
 .before .policies-title {
   position: relative;
   z-index: 1;

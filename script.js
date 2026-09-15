@@ -160,8 +160,41 @@ if (dateInput && timeSelect && form) {
     const urls = [];
     const configured = String(window.__SITE__?.bookingApi || "").trim();
     if (configured) urls.push(configured.replace(/\/$/, ""));
+    const sms = String(window.__SITE__?.smsWebhook || "").trim();
+    if (sms) urls.push(sms.replace(/\/$/, ""));
     urls.push("https://styledbytonika-sms.workers.dev");
     return [...new Set(urls)];
+  }
+
+  async function sendClientText({ name, phone, date, time, service, hours, remind }) {
+    const payload = {
+      action: "sms",
+      confirm: true,
+      remind: Boolean(remind),
+      name,
+      phone,
+      date,
+      time,
+      service,
+      hours,
+    };
+    for (const url of bookingEndpoints()) {
+      try {
+        const { res, out } = await fetchJson(
+          url,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+          15000
+        );
+        if (res.ok && out.ok) return out;
+      } catch {
+        /* try next */
+      }
+    }
+    return null;
   }
 
   async function fetchJson(url, opts = {}, ms = 2500) {
@@ -428,7 +461,7 @@ if (dateInput && timeSelect && form) {
     return { day, timeLabel, start };
   }
 
-  function showBooked({ name, service, day, timeLabel, where, instagram, reminderLine, sendNote, inspoLine }) {
+  function showBooked({ name, service, day, timeLabel, where, instagram, reminderLine, sendNote, inspoLine, textLine }) {
     successCopy.replaceChildren();
     const line = (cls, text) => {
       const p = document.createElement("p");
@@ -442,10 +475,31 @@ if (dateInput && timeSelect && form) {
     if (instagram) line("booked-ig", instagram);
     if (where) line("booked-where", where);
     if (inspoLine) line("booked-inspo", inspoLine);
+    if (textLine) line("booked-text", textLine);
     if (reminderLine) line("booked-reminder", reminderLine);
     if (sendNote) line("booked-send-note", sendNote);
     modal.hidden = false;
+    modal.scrollTop = 0;
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
+    document.querySelector("#booked-close")?.focus();
   }
+
+  function closeBooked() {
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    document.documentElement.classList.remove("modal-open");
+    document.body.classList.remove("modal-open");
+  }
+
+  modal?.addEventListener("click", (event) => {
+    if (event.target === modal) closeBooked();
+  });
+  document.querySelector("#booked-close")?.addEventListener("click", closeBooked);
+  document.querySelector("#booked-done")?.addEventListener("click", closeBooked);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeBooked();
+  });
 
   const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
   const MEDIA_TYPE_OK = /^(image|video)\//i;
@@ -1004,41 +1058,30 @@ if (dateInput && timeSelect && form) {
     }
     (claimed.keys || [holdKey]).forEach((key) => rememberTaken(key));
 
-    if (remindOn) {
-      const webhook = String(window.__SITE__?.smsWebhook || "").trim();
-      if (webhook) {
-        try {
-          const res = await fetch(webhook, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: data.name,
-              phone: data.phone,
-              date: data.date,
-              time: data.time,
-              hours,
-            }),
+    let textLine = "";
+    try {
+      const smsOut = await sendClientText({
+        name: data.name,
+        phone: data.phone,
+        date: data.date,
+        time: data.time,
+        service: data.service,
+        hours,
+        remind: remindOn,
+      });
+      if (smsOut?.confirmed) textLine = "Confirmation text sent to your phone.";
+      if (remindOn && smsOut?.reminded) {
+        const around =
+          smsOut.remindLabel ||
+          new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: TZ,
           });
-          const out = await res.json().catch(() => ({}));
-          if (res.ok && out.ok) {
-            const around = out.remindLabel || new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              timeZone: TZ,
-            });
-            reminderLine = `Text reminder ${hours} hours before (${around}).`;
-          }
-        } catch {
-          /* email already went through */
-        }
-      } else {
-        const around = new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          timeZone: TZ,
-        });
         reminderLine = `Text reminder ${hours} hours before (${around}).`;
       }
+    } catch {
+      /* booking email already went through */
     }
 
     const hasMedia = Boolean(hairFile || inspoFile);
@@ -1060,6 +1103,7 @@ if (dateInput && timeSelect && form) {
       where,
       instagram: data.instagram,
       reminderLine,
+      textLine,
       sendNote,
       inspoLine: inspoParts.join(" "),
     });
