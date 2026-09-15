@@ -960,29 +960,23 @@ if (dateInput && timeSelect && form) {
 
   async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
     const fields = bookingMailFields(inbox, subject, data, day, timeLabel, where, extras);
+    const hasFiles = Boolean(extras.sheetBlob || extras.hairBlob || extras.inspoBlob);
+    if (hasFiles) {
+      await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
+      return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
+    }
     const fd = new FormData();
     Object.entries(fields).forEach(([key, value]) => {
       if (value instanceof File) fd.append(key, value, value.name);
       else fd.append(key, value);
     });
-    try {
-      const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: fd,
-      });
-      const out = await res.json().catch(() => ({}));
-      if (String(out.success) === "true" && extras.sheetBlob) {
-        await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
-        return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
-      }
-      if (String(out.success) === "true") {
-        return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
-      }
-    } catch {
-      /* native post still sends the photos */
-    }
-    await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
+    const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: fd,
+    });
+    const out = await res.json().catch(() => ({}));
+    if (String(out.success) !== "true") throw new Error("FormSubmit failed");
     return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
   }
 
