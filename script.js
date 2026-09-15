@@ -478,6 +478,12 @@ if (dateInput && timeSelect && form) {
     if (textLine) line("booked-text", textLine);
     if (reminderLine) line("booked-reminder", reminderLine);
     if (sendNote) line("booked-send-note", sendNote);
+    const note = modal.querySelector(".booked-note");
+    if (note) {
+      note.textContent = textLine
+        ? "A confirmation text is on the way. Tonika has your request."
+        : "Tonika has your request.";
+    }
     modal.hidden = false;
     modal.scrollTop = 0;
     document.documentElement.classList.add("modal-open");
