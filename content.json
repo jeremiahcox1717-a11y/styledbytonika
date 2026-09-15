@@ -52,6 +52,6 @@
   "slotHours": 1,
   "blocked": [],
   "bookingApi": "https://styledbytonika-sms.workers.dev",
-  "smsWebhook": ""
+  "smsWebhook": "https://styledbytonika-sms.workers.dev"
 }
 

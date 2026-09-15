@@ -970,8 +970,8 @@ async function sendBookingTexts(env, payload) {
   const when = appointmentLabels(dateStr, clock);
   if (!when) return { ok: false, error: "Bad appointment time", status: 400 };
 
-  const styleBit = service ? `${service} ` : "";
-  const confirmBody = `Hi ${name}, you're booked with Styled by Tonika! ${styleBit}on ${when.day} at ${when.timeLabel}. See you then!`;
+  const styleBit = service ? ` for ${service}` : "";
+  const confirmBody = `Hi ${name}, you're booked with Styled by Tonika${styleBit} on ${when.day} at ${when.timeLabel}. See you then!`;
   const remindBody = service
     ? `Hi ${name}, Styled by Tonika reminder: your ${service} appointment is ${when.day} at ${when.timeLabel}. See you soon!`
     : `Hi ${name}, Styled by Tonika reminder: your appointment is ${when.day} at ${when.timeLabel}. See you soon!`;
