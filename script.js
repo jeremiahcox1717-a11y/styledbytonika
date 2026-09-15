@@ -751,9 +751,9 @@ if (dateInput && timeSelect && form) {
     }
     const bitmap = await bitmapFromFile(source);
     if (!bitmap) return blobToInline(source, jpegName(file, "photo"), "photo");
-    let blob = await canvasToJpeg(bitmap, 720, 0.72);
-    if (blob && blob.size > 90000) blob = await canvasToJpeg(bitmap, 560, 0.6);
-    if (blob && blob.size > 90000) blob = await canvasToJpeg(bitmap, 480, 0.52);
+    let blob = await canvasToJpeg(bitmap, 640, 0.68);
+    if (blob && blob.size > 70000) blob = await canvasToJpeg(bitmap, 520, 0.58);
+    if (blob && blob.size > 70000) blob = await canvasToJpeg(bitmap, 420, 0.5);
     bitmap.close?.();
     return blobToInline(blob || source, jpegName(file, "photo"), "photo");
   }
@@ -838,38 +838,151 @@ if (dateInput && timeSelect && form) {
     a.remove();
   }
 
-  async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
-    const fd = new FormData();
-    fd.append("_subject", subject);
-    fd.append("_template", "box");
-    fd.append("_replyto", data.email);
-    if (extras.recapUrl) fd.append("Open this booking", extras.recapUrl);
-    fd.append("Client", data.name);
-    fd.append("Phone", data.phone);
-    fd.append("Client email", data.email);
-    fd.append("Instagram", data.instagram || "(none)");
-    fd.append("Service", data.service);
-    fd.append("When", `${day} at ${timeLabel}`);
-    fd.append("Address", where || "(none)");
-    if (extras.hairUrl) fd.append("Current hair photo link", extras.hairUrl);
-    if (extras.inspoUrl) fd.append("Inspiration photo link", extras.inspoUrl);
-    fd.append("Inspiration link", data["inspo-url"] || "(none)");
-    fd.append("Notes", data.notes || "(none)");
-    if (extras.hairBlob) {
-      fd.append("current_hair_photo", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
-      fd.append("attachment", extras.hairBlob, extras.hairBlob.name || "current-hair.jpg");
-    }
-    if (extras.inspoBlob) {
-      fd.append("inspiration_photo", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
-      fd.append("file", extras.inspoBlob, extras.inspoBlob.name || "inspiration.jpg");
-    }
-    const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: fd,
+  function imageFromInline(inline) {
+    return new Promise((resolve) => {
+      if (!inline?.b64) {
+        resolve(null);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = `data:${inline.type || "image/jpeg"};base64,${inline.b64}`;
     });
-    const out = await res.json().catch(() => ({}));
-    if (String(out.success) !== "true") throw new Error("FormSubmit failed");
+  }
+
+  async function makePhotoSheet(hair, inspo) {
+    const hairImg = await imageFromInline(hair);
+    const inspoImg = await imageFromInline(inspo);
+    if (!hairImg && !inspoImg) return null;
+    const width = 560;
+    const labelH = 44;
+    const gap = 18;
+    const fitH = (img) => Math.max(160, Math.round(width * (img.height / Math.max(1, img.width))));
+    const hairH = hairImg ? fitH(hairImg) : 0;
+    const inspoH = inspoImg ? fitH(inspoImg) : 0;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = 20 + (hairImg ? labelH + hairH + gap : 0) + (inspoImg ? labelH + inspoH : 0);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "700 20px Arial, Helvetica, sans-serif";
+    let y = 12;
+    const block = (title, img, h) => {
+      ctx.fillStyle = "#ff4ec8";
+      ctx.fillText(title, 16, y + 28);
+      y += labelH;
+      if (img) ctx.drawImage(img, 0, y, width, h);
+      y += h + gap;
+    };
+    if (hairImg) block("CURRENT HAIR / LENGTH", hairImg, hairH);
+    if (inspoImg) block("STYLE THEY WANT", inspoImg, inspoH);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+    if (!blob) return null;
+    return new File([blob], "booking-photos.jpg", { type: "image/jpeg" });
+  }
+
+  function appendFormValue(form, name, value) {
+    if (value instanceof File) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.name = name;
+      const transfer = new DataTransfer();
+      transfer.items.add(value);
+      input.files = transfer.files;
+      form.appendChild(input);
+      return;
+    }
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value == null ? "" : String(value);
+    form.appendChild(input);
+  }
+
+  function nativeFormPost(action, fields) {
+    return new Promise((resolve) => {
+      const iframe = document.createElement("iframe");
+      const name = `sbt_mail_${Date.now()}`;
+      iframe.name = name;
+      iframe.setAttribute("aria-hidden", "true");
+      iframe.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;";
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = action;
+      form.enctype = "multipart/form-data";
+      form.target = name;
+      Object.entries(fields).forEach(([key, value]) => {
+        if (value) appendFormValue(form, key, value);
+      });
+      document.body.appendChild(iframe);
+      document.body.appendChild(form);
+      const finish = () => {
+        if (finish.done) return;
+        finish.done = true;
+        setTimeout(() => {
+          iframe.remove();
+          form.remove();
+        }, 1500);
+        resolve(true);
+      };
+      iframe.addEventListener("load", finish, { once: true });
+      setTimeout(finish, 7000);
+      form.submit();
+    });
+  }
+
+  function bookingMailFields(inbox, subject, data, day, timeLabel, where, extras = {}) {
+    const fields = {
+      _subject: subject,
+      _template: "box",
+      _captcha: "false",
+      _replyto: data.email,
+      Client: data.name,
+      Phone: data.phone,
+      "Client email": data.email,
+      Instagram: data.instagram || "(none)",
+      Service: data.service,
+      When: `${day} at ${timeLabel}`,
+      Address: where || "(none)",
+      "Inspiration link": data["inspo-url"] || "(none)",
+      Notes: data.notes || "(none)",
+    };
+    if (extras.recapUrl) fields["Open this booking"] = extras.recapUrl;
+    if (extras.hairUrl) fields["Current hair photo link"] = extras.hairUrl;
+    if (extras.inspoUrl) fields["Inspiration photo link"] = extras.inspoUrl;
+    if (extras.sheetBlob) fields.attachment = extras.sheetBlob;
+    if (extras.hairBlob) fields.current_hair_photo = extras.hairBlob;
+    if (extras.inspoBlob) fields.inspiration_photo = extras.inspoBlob;
+    return fields;
+  }
+
+  async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
+    const fields = bookingMailFields(inbox, subject, data, day, timeLabel, where, extras);
+    const fd = new FormData();
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value instanceof File) fd.append(key, value, value.name);
+      else fd.append(key, value);
+    });
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: fd,
+      });
+      const out = await res.json().catch(() => ({}));
+      if (String(out.success) === "true" && extras.sheetBlob) {
+        await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
+        return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
+      }
+      if (String(out.success) === "true") {
+        return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
+      }
+    } catch {
+      /* native post still sends the photos */
+    }
+    await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
     return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
   }
 
@@ -893,6 +1006,12 @@ if (dateInput && timeSelect && form) {
     const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
     const hair = await fileToInline(hairFile);
     const inspo = await fileToInline(inspoFile);
+    const sheetBlob = await makePhotoSheet(hair, inspo);
+    const photoExtras = {
+      hairBlob: inlineToBlob(hair),
+      inspoBlob: inlineToBlob(inspo),
+      sheetBlob,
+    };
     const payload = {
       action: "notify",
       inbox,
@@ -913,6 +1032,16 @@ if (dateInput && timeSelect && form) {
       inspo,
     };
 
+    async function sendPhotos(extra = {}) {
+      if (!hair && !inspo && !sheetBlob) return null;
+      return postFormSubmit(inbox, subject, data, day, timeLabel, where, {
+        ...photoExtras,
+        recapUrl: extra.recapUrl,
+        hairUrl: extra.hairUrl,
+        inspoUrl: extra.inspoUrl,
+      });
+    }
+
     for (const url of bookingEndpoints()) {
       try {
         const { res, out } = await fetchJson(
@@ -925,30 +1054,18 @@ if (dateInput && timeSelect && form) {
           35000
         );
         if (res.ok && out.ok) {
-          if ((hair || inspo) && !photosInEmail(out.via)) {
+          if ((hair || inspo || sheetBlob) && !photosInEmail(out.via)) {
             try {
-              return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
-                recapUrl: out.recapUrl,
-                hairUrl: out.hairUrl,
-                inspoUrl: out.inspoUrl,
-                hairBlob: inlineToBlob(hair),
-                inspoBlob: inlineToBlob(inspo),
-              });
+              await sendPhotos(out);
             } catch {
-              return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
+              /* booking details already reached Tonika */
             }
           }
           return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
         }
         if (out.recapUrl) {
           try {
-            return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
-              recapUrl: out.recapUrl,
-              hairUrl: out.hairUrl,
-              inspoUrl: out.inspoUrl,
-              hairBlob: inlineToBlob(hair),
-              inspoBlob: inlineToBlob(inspo),
-            });
+            return await sendPhotos(out);
           } catch {
             /* try next endpoint */
           }
@@ -959,10 +1076,7 @@ if (dateInput && timeSelect && form) {
     }
 
     try {
-      return await postFormSubmit(inbox, subject, data, day, timeLabel, where, {
-        hairBlob: inlineToBlob(hair),
-        inspoBlob: inlineToBlob(inspo),
-      });
+      return await sendPhotos();
     } catch {
       const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
       openMailto(inbox, subject, body);
