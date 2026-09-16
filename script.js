@@ -843,40 +843,7 @@ if (dateInput && timeSelect && form) {
     return new File([file], filename, { type: "image/jpeg" });
   }
 
-  function bookingMailFields(inbox, subject, data, day, timeLabel, where, extras = {}) {
-    const details = [
-      "STYLED BY TONIKA",
-      "New booking",
-      "",
-      data.name,
-      data.service,
-      `${day} at ${timeLabel}`,
-      data.phone ? `Phone: ${data.phone}` : "",
-      data.email ? `Email: ${data.email}` : "",
-      data.instagram ? `Instagram: ${data.instagram}` : "",
-      where ? `Address: ${where}` : "",
-      data["inspo-url"] ? `Inspiration link: ${data["inspo-url"]}` : "",
-      data.notes ? `Notes: ${data.notes}` : "",
-      extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
-      "",
-      "Two photos are attached: current hair, and the style they want.",
-    ]
-      .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
-      .join("\n");
-    const fields = {
-      _subject: subject,
-      _captcha: "false",
-      _replyto: data.email,
-      Booking: details,
-    };
-    const hair = namedJpeg(extras.hairBlob, "Current-hair.jpg");
-    const inspo = namedJpeg(extras.inspoBlob, "Style-they-want.jpg");
-    if (hair) fields["Current hair"] = hair;
-    if (inspo) fields["Style they want"] = inspo;
-    return fields;
-  }
-
-  async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
+  function appendFormValue(form, name, value) {
     if (value instanceof File) {
       const input = document.createElement("input");
       input.type = "file";
@@ -927,33 +894,41 @@ if (dateInput && timeSelect && form) {
   }
 
   function bookingMailFields(inbox, subject, data, day, timeLabel, where, extras = {}) {
+    const details = [
+      "STYLED BY TONIKA",
+      "New booking",
+      "",
+      data.name,
+      data.service,
+      `${day} at ${timeLabel}`,
+      data.phone ? `Phone: ${data.phone}` : "",
+      data.email ? `Email: ${data.email}` : "",
+      data.instagram ? `Instagram: ${data.instagram}` : "",
+      where ? `Address: ${where}` : "",
+      data["inspo-url"] ? `Inspiration link: ${data["inspo-url"]}` : "",
+      data.notes ? `Notes: ${data.notes}` : "",
+      extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
+      "",
+      "Two photos are attached: current hair, and the style they want.",
+    ]
+      .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
+      .join("\n");
     const fields = {
       _subject: subject,
-      _template: "box",
       _captcha: "false",
       _replyto: data.email,
-      Client: data.name,
-      Phone: data.phone,
-      "Client email": data.email,
-      Instagram: data.instagram || "(none)",
-      Service: data.service,
-      When: `${day} at ${timeLabel}`,
-      Address: where || "(none)",
-      "Inspiration link": data["inspo-url"] || "(none)",
-      Notes: data.notes || "(none)",
+      Booking: details,
     };
-    if (extras.recapUrl) fields["Open this booking"] = extras.recapUrl;
-    if (extras.hairUrl) fields["Current hair photo link"] = extras.hairUrl;
-    if (extras.inspoUrl) fields["Inspiration photo link"] = extras.inspoUrl;
-    if (extras.sheetBlob) fields.attachment = extras.sheetBlob;
-    if (extras.hairBlob) fields.current_hair_photo = extras.hairBlob;
-    if (extras.inspoBlob) fields.inspiration_photo = extras.inspoBlob;
+    const hair = namedJpeg(extras.hairBlob, "Current-hair.jpg");
+    const inspo = namedJpeg(extras.inspoBlob, "Style-they-want.jpg");
+    if (hair) fields["Current hair"] = hair;
+    if (inspo) fields["Style they want"] = inspo;
     return fields;
   }
 
   async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
     const fields = bookingMailFields(inbox, subject, data, day, timeLabel, where, extras);
-    const hasFiles = Boolean(extras.sheetBlob || extras.hairBlob || extras.inspoBlob);
+    const hasFiles = Boolean(extras.hairBlob || extras.inspoBlob);
     if (hasFiles) {
       await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
       return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
