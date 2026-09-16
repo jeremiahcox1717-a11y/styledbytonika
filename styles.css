@@ -854,20 +854,17 @@ a {
   gap: 0.4rem;
   min-height: 9.5rem;
   padding: 1.5rem 1.1rem;
-  border: 1px dashed rgba(255, 182, 218, 0.32);
-  background: #141014;
-  border-radius: 1.15rem;
+  border: 1px dashed rgba(255, 255, 255, 0.38);
+  background: #111;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .inspo-drop:hover,
 .inspo-upload.is-dragover .inspo-drop,
 .inspo-file:focus-visible + .inspo-drop {
   border-color: var(--neon);
-  background: #1a1218;
-  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.16);
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
 }
 
 .inspo-upload.has-file .inspo-drop {
@@ -907,8 +904,7 @@ a {
   max-height: 22rem;
   object-fit: contain;
   background: #0a0a0a;
-  border: 1px solid rgba(255, 182, 218, 0.28);
-  border-radius: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.38);
 }
 
 .inspo-preview-name {
@@ -920,15 +916,14 @@ a {
 
 .inspo-remove {
   background: transparent;
-  border: 1px solid rgba(255, 182, 218, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.38);
   color: #fff;
   font-family: var(--display);
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 0.65rem 1.05rem;
-  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
   cursor: pointer;
 }
 
@@ -997,31 +992,24 @@ input,
 select,
 textarea {
   width: 100%;
-  background: #141014;
-  border: 1px solid rgba(255, 182, 218, 0.28);
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.38);
   color: #fff;
   caret-color: #fff;
   color-scheme: dark;
   font-family: var(--body);
   font-size: 1.05rem;
   letter-spacing: 0.02em;
-  padding: 0.9rem 1.05rem;
+  padding: 0.75rem 0.85rem;
   outline: none;
-  border-radius: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  border-radius: 0;
 }
 
 .book-page input:not([type="checkbox"]):not([type="file"]),
 .book-page select,
 .book-page textarea {
-  background: #141014;
+  background: #111;
   color: #fff;
-}
-
-.book-page textarea {
-  min-height: 7.5rem;
-  resize: vertical;
-  line-height: 1.5;
 }
 
 input:focus,
@@ -1030,10 +1018,10 @@ textarea:focus,
 .book-page input:not([type="checkbox"]):not([type="file"]):focus,
 .book-page select:focus,
 .book-page textarea:focus {
-  background: #1a1218;
+  background: #111;
   color: #fff;
   border-color: var(--neon);
-  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.16), 0 0 18px rgba(255, 78, 200, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
 }
 
 .book-page input::placeholder,
@@ -1048,7 +1036,7 @@ textarea:focus,
 .book-page textarea:-webkit-autofill:focus {
   -webkit-text-fill-color: #fff;
   caret-color: #fff;
-  box-shadow: 0 0 0 1000px #141014 inset;
+  box-shadow: 0 0 0 1000px #111 inset;
   transition: background-color 99999s ease-out;
 }
 
@@ -1070,12 +1058,12 @@ textarea:focus,
 .book-page select {
   appearance: none;
   -webkit-appearance: none;
-  background-color: #141014;
+  background-color: #111;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='%23f0c9d6' d='M1 1l5 5 5-5'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 1.05rem center;
+  background-position: right 0.85rem center;
   background-size: 0.75rem;
-  padding-right: 2.6rem;
+  padding-right: 2.4rem;
 }
 
 .book-page option,
@@ -1106,13 +1094,12 @@ select {
 }
 
 .check input {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
   margin-top: 0.2rem;
   accent-color: var(--neon);
-  background: #141014;
-  border: 1px solid rgba(255, 182, 218, 0.4);
-  border-radius: 0.35rem;
+  background: transparent;
+  border: 0;
   padding: 0;
   box-shadow: none;
 }
@@ -1133,7 +1120,6 @@ select {
   color: #000;
   border: 0;
   padding: 1rem 1.2rem;
-  border-radius: 999px;
   cursor: pointer;
   box-shadow: 0 0 22px rgba(255, 78, 200, 0.35);
 }
