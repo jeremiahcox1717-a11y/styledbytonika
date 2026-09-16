@@ -838,52 +838,45 @@ if (dateInput && timeSelect && form) {
     a.remove();
   }
 
-  function imageFromInline(inline) {
-    return new Promise((resolve) => {
-      if (!inline?.b64) {
-        resolve(null);
-        return;
-      }
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = `data:${inline.type || "image/jpeg"};base64,${inline.b64}`;
-    });
+  function namedJpeg(file, filename) {
+    if (!file) return null;
+    return new File([file], filename, { type: "image/jpeg" });
   }
 
-  async function makePhotoSheet(hair, inspo) {
-    const hairImg = await imageFromInline(hair);
-    const inspoImg = await imageFromInline(inspo);
-    if (!hairImg && !inspoImg) return null;
-    const width = 560;
-    const labelH = 44;
-    const gap = 18;
-    const fitH = (img) => Math.max(160, Math.round(width * (img.height / Math.max(1, img.width))));
-    const hairH = hairImg ? fitH(hairImg) : 0;
-    const inspoH = inspoImg ? fitH(inspoImg) : 0;
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = 20 + (hairImg ? labelH + hairH + gap : 0) + (inspoImg ? labelH + inspoH : 0);
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#111111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "700 20px Arial, Helvetica, sans-serif";
-    let y = 12;
-    const block = (title, img, h) => {
-      ctx.fillStyle = "#ff4ec8";
-      ctx.fillText(title, 16, y + 28);
-      y += labelH;
-      if (img) ctx.drawImage(img, 0, y, width, h);
-      y += h + gap;
+  function bookingMailFields(inbox, subject, data, day, timeLabel, where, extras = {}) {
+    const details = [
+      "STYLED BY TONIKA",
+      "New booking",
+      "",
+      data.name,
+      data.service,
+      `${day} at ${timeLabel}`,
+      data.phone ? `Phone: ${data.phone}` : "",
+      data.email ? `Email: ${data.email}` : "",
+      data.instagram ? `Instagram: ${data.instagram}` : "",
+      where ? `Address: ${where}` : "",
+      data["inspo-url"] ? `Inspiration link: ${data["inspo-url"]}` : "",
+      data.notes ? `Notes: ${data.notes}` : "",
+      extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
+      "",
+      "Two photos are attached: current hair, and the style they want.",
+    ]
+      .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
+      .join("\n");
+    const fields = {
+      _subject: subject,
+      _captcha: "false",
+      _replyto: data.email,
+      Booking: details,
     };
-    if (hairImg) block("CURRENT HAIR / LENGTH", hairImg, hairH);
-    if (inspoImg) block("STYLE THEY WANT", inspoImg, inspoH);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
-    if (!blob) return null;
-    return new File([blob], "booking-photos.jpg", { type: "image/jpeg" });
+    const hair = namedJpeg(extras.hairBlob, "Current-hair.jpg");
+    const inspo = namedJpeg(extras.inspoBlob, "Style-they-want.jpg");
+    if (hair) fields["Current hair"] = hair;
+    if (inspo) fields["Style they want"] = inspo;
+    return fields;
   }
 
-  function appendFormValue(form, name, value) {
+  async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
     if (value instanceof File) {
       const input = document.createElement("input");
       input.type = "file";
