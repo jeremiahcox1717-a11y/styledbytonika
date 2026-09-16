@@ -821,7 +821,6 @@ if (dateInput && timeSelect && form) {
       extra.hairUrl ? `Current hair photo: ${extra.hairUrl}` : `Current hair: ${hairFile?.name || "(none uploaded)"}`,
       extra.inspoUrl ? `Inspiration photo: ${extra.inspoUrl}` : `Inspiration: ${inspoFile?.name || "(none uploaded)"}`,
       extra.recapUrl ? `Open with photos: ${extra.recapUrl}` : "",
-      `Inspiration link: ${data["inspo-url"] || "(none)"}`,
       `Notes: ${data.notes || "(none)"}`,
     ]
       .filter((line, i, arr) => line !== "" || arr[i - 1] !== "")
@@ -904,7 +903,6 @@ if (dateInput && timeSelect && form) {
       data.email ? `Email: ${data.email}` : "",
       data.instagram ? `Instagram: ${data.instagram}` : "",
       where ? `Address: ${where}` : "",
-      data["inspo-url"] ? `Inspiration link: ${data["inspo-url"]}` : "",
       data.notes ? `Notes: ${data.notes}` : "",
       extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
       "",
@@ -988,7 +986,6 @@ if (dateInput && timeSelect && form) {
       timeLabel,
       address: where,
       notes: data.notes || "",
-      inspoLink: data["inspo-url"] || "",
       subject,
       hair,
       inspo,
@@ -1176,7 +1173,6 @@ if (dateInput && timeSelect && form) {
     const inspoParts = [];
     if (hairFile) inspoParts.push(`Current hair ${mediaKind(hairFile)} sent.`);
     if (inspoFile) inspoParts.push(`Inspiration ${mediaKind(inspoFile)} sent.`);
-    if (data["inspo-url"]) inspoParts.push("Inspiration link sent.");
     showBooked({
       name: data.name,
       service: data.service,
