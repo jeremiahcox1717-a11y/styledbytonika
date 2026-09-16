@@ -854,17 +854,20 @@ a {
   gap: 0.4rem;
   min-height: 9.5rem;
   padding: 1.5rem 1.1rem;
-  border: 1px dashed rgba(255, 255, 255, 0.38);
-  background: #111;
+  border: 1px dashed rgba(255, 182, 218, 0.32);
+  background: #141014;
+  border-radius: 1.15rem;
   cursor: pointer;
   text-align: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .inspo-drop:hover,
 .inspo-upload.is-dragover .inspo-drop,
 .inspo-file:focus-visible + .inspo-drop {
   border-color: var(--neon);
-  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
+  background: #1a1218;
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.16);
 }
 
 .inspo-upload.has-file .inspo-drop {
@@ -904,7 +907,8 @@ a {
   max-height: 22rem;
   object-fit: contain;
   background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 182, 218, 0.28);
+  border-radius: 1.15rem;
 }
 
 .inspo-preview-name {
@@ -916,14 +920,15 @@ a {
 
 .inspo-remove {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 182, 218, 0.32);
   color: #fff;
   font-family: var(--display);
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 0.65rem 0.95rem;
+  padding: 0.65rem 1.05rem;
+  border-radius: 999px;
   cursor: pointer;
 }
 
