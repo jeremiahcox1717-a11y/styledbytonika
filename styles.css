@@ -997,24 +997,31 @@ input,
 select,
 textarea {
   width: 100%;
-  background: #111;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: #141014;
+  border: 1px solid rgba(255, 182, 218, 0.28);
   color: #fff;
   caret-color: #fff;
   color-scheme: dark;
   font-family: var(--body);
   font-size: 1.05rem;
   letter-spacing: 0.02em;
-  padding: 0.75rem 0.85rem;
+  padding: 0.9rem 1.05rem;
   outline: none;
-  border-radius: 0;
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .book-page input:not([type="checkbox"]):not([type="file"]),
 .book-page select,
 .book-page textarea {
-  background: #111;
+  background: #141014;
   color: #fff;
+}
+
+.book-page textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 input:focus,
@@ -1023,10 +1030,10 @@ textarea:focus,
 .book-page input:not([type="checkbox"]):not([type="file"]):focus,
 .book-page select:focus,
 .book-page textarea:focus {
-  background: #111;
+  background: #1a1218;
   color: #fff;
   border-color: var(--neon);
-  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.18);
+  box-shadow: 0 0 0 3px rgba(255, 78, 200, 0.16), 0 0 18px rgba(255, 78, 200, 0.12);
 }
 
 .book-page input::placeholder,
@@ -1041,7 +1048,7 @@ textarea:focus,
 .book-page textarea:-webkit-autofill:focus {
   -webkit-text-fill-color: #fff;
   caret-color: #fff;
-  box-shadow: 0 0 0 1000px #111 inset;
+  box-shadow: 0 0 0 1000px #141014 inset;
   transition: background-color 99999s ease-out;
 }
 
@@ -1063,12 +1070,12 @@ textarea:focus,
 .book-page select {
   appearance: none;
   -webkit-appearance: none;
-  background-color: #111;
+  background-color: #141014;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='%23f0c9d6' d='M1 1l5 5 5-5'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 0.85rem center;
+  background-position: right 1.05rem center;
   background-size: 0.75rem;
-  padding-right: 2.4rem;
+  padding-right: 2.6rem;
 }
 
 .book-page option,
@@ -1099,12 +1106,13 @@ select {
 }
 
 .check input {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.15rem;
+  height: 1.15rem;
   margin-top: 0.2rem;
   accent-color: var(--neon);
-  background: transparent;
-  border: 0;
+  background: #141014;
+  border: 1px solid rgba(255, 182, 218, 0.4);
+  border-radius: 0.35rem;
   padding: 0;
   box-shadow: none;
 }
@@ -1125,6 +1133,7 @@ select {
   color: #000;
   border: 0;
   padding: 1rem 1.2rem;
+  border-radius: 999px;
   cursor: pointer;
   box-shadow: 0 0 22px rgba(255, 78, 200, 0.35);
 }
