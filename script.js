@@ -861,7 +861,7 @@ if (dateInput && timeSelect && form) {
     form.appendChild(input);
   }
 
-  function nativeFormPost(action, fields) {
+  function nativeFormPost(action, parts) {
     return new Promise((resolve) => {
       const iframe = document.createElement("iframe");
       const name = `sbt_mail_${Date.now()}`;
@@ -873,7 +873,7 @@ if (dateInput && timeSelect && form) {
       form.action = action;
       form.enctype = "multipart/form-data";
       form.target = name;
-      Object.entries(fields).forEach(([key, value]) => {
+      parts.forEach(([key, value]) => {
         if (value) appendFormValue(form, key, value);
       });
       document.body.appendChild(iframe);
@@ -893,10 +893,9 @@ if (dateInput && timeSelect && form) {
     });
   }
 
-  function bookingMailFields(inbox, subject, data, day, timeLabel, where, extras = {}) {
+  function bookingMailParts(inbox, subject, data, day, timeLabel, where, extras = {}) {
     const details = [
-      "STYLED BY TONIKA",
-      "New booking",
+      "Styled by Tonika — new booking",
       "",
       data.name,
       data.service,
@@ -909,34 +908,37 @@ if (dateInput && timeSelect && form) {
       data.notes ? `Notes: ${data.notes}` : "",
       extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
       "",
-      "Two photos are attached: current hair, and the style they want.",
+      "Two photos are attached:",
+      "1. Current hair — how long it is now",
+      "2. Style they want",
     ]
       .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
       .join("\n");
-    const fields = {
-      _subject: subject,
-      _captcha: "false",
-      _replyto: data.email,
-      Booking: details,
-    };
+    const parts = [
+      ["_subject", subject],
+      ["_template", "basic"],
+      ["_captcha", "false"],
+    ];
+    if (data.email) parts.push(["_replyto", data.email]);
+    parts.push(["message", details]);
     const hair = namedJpeg(extras.hairBlob, "Current-hair.jpg");
     const inspo = namedJpeg(extras.inspoBlob, "Style-they-want.jpg");
-    if (hair) fields["Current hair"] = hair;
-    if (inspo) fields["Style they want"] = inspo;
-    return fields;
+    if (hair) parts.push(["attachment", hair]);
+    if (inspo) parts.push(["attachment", inspo]);
+    return parts;
   }
 
   async function postFormSubmit(inbox, subject, data, day, timeLabel, where, extras = {}) {
-    const fields = bookingMailFields(inbox, subject, data, day, timeLabel, where, extras);
+    const parts = bookingMailParts(inbox, subject, data, day, timeLabel, where, extras);
     const hasFiles = Boolean(extras.hairBlob || extras.inspoBlob);
     if (hasFiles) {
-      await nativeFormPost(`https://formsubmit.co/${inbox}`, fields);
+      await nativeFormPost(`https://formsubmit.co/${inbox}`, parts);
       return { inbox, subject, via: "formsubmit", recapUrl: extras.recapUrl };
     }
     const fd = new FormData();
-    Object.entries(fields).forEach(([key, value]) => {
+    parts.forEach(([key, value]) => {
       if (value instanceof File) fd.append(key, value, value.name);
-      else fd.append(key, value);
+      else if (value) fd.append(key, value);
     });
     const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
       method: "POST",
@@ -968,11 +970,9 @@ if (dateInput && timeSelect && form) {
     const subject = `New booking: ${data.service} — ${day} at ${timeLabel}`;
     const hair = await fileToInline(hairFile);
     const inspo = await fileToInline(inspoFile);
-    const sheetBlob = await makePhotoSheet(hair, inspo);
     const photoExtras = {
       hairBlob: inlineToBlob(hair),
       inspoBlob: inlineToBlob(inspo),
-      sheetBlob,
     };
     const payload = {
       action: "notify",
@@ -995,7 +995,7 @@ if (dateInput && timeSelect && form) {
     };
 
     async function sendPhotos(extra = {}) {
-      if (!hair && !inspo && !sheetBlob) return null;
+      if (!hair && !inspo) return null;
       return postFormSubmit(inbox, subject, data, day, timeLabel, where, {
         ...photoExtras,
         recapUrl: extra.recapUrl,
@@ -1016,7 +1016,7 @@ if (dateInput && timeSelect && form) {
           35000
         );
         if (res.ok && out.ok) {
-          if ((hair || inspo || sheetBlob) && !photosInEmail(out.via)) {
+          if ((hair || inspo) && !photosInEmail(out.via)) {
             try {
               await sendPhotos(out);
             } catch {

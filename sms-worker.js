@@ -793,24 +793,34 @@ async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
 async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
   const fd = new FormData();
   fd.append("_subject", booking.subject);
-  fd.append("_template", "box");
-  fd.append("_replyto", booking.email || inbox);
-  fd.append("Open this booking", `${origin}/booking/${booking.id}`);
-  fd.append("Client", booking.name);
-  fd.append("Service", booking.service);
-  fd.append("When", `${booking.day} at ${booking.timeLabel}`);
-  fd.append("Phone", booking.phone);
-  fd.append("Client email", booking.email);
-  if (booking.instagram) fd.append("Instagram", booking.instagram);
-  if (booking.address) fd.append("Address", booking.address);
-  if (booking.notes) fd.append("Notes", booking.notes);
-  if (booking.inspoUrlText) fd.append("Inspiration link", booking.inspoUrlText);
-  if (hair) fd.append("Current hair photo link", booking.hairUrl);
-  if (inspo) fd.append("Inspiration photo link", booking.inspoUrl);
-  const hairFile = fileFromMedia(hair, "current-hair");
-  const inspoFile = fileFromMedia(inspo, "inspiration");
-  if (hairFile) fd.append("current_hair_photo", hairFile, hairFile.name);
-  if (inspoFile) fd.append("inspiration_photo", inspoFile, inspoFile.name);
+  fd.append("_template", "basic");
+  fd.append("_captcha", "false");
+  if (booking.email) fd.append("_replyto", booking.email);
+  const details = [
+    "Styled by Tonika — new booking",
+    "",
+    booking.name,
+    booking.service,
+    `${booking.day} at ${booking.timeLabel}`,
+    booking.phone ? `Phone: ${booking.phone}` : "",
+    booking.email ? `Email: ${booking.email}` : "",
+    booking.instagram ? `Instagram: ${booking.instagram}` : "",
+    booking.address ? `Address: ${booking.address}` : "",
+    booking.inspoUrlText ? `Inspiration link: ${booking.inspoUrlText}` : "",
+    booking.notes ? `Notes: ${booking.notes}` : "",
+    `Open with photos: ${origin}/booking/${booking.id}`,
+    "",
+    "Two photos are attached:",
+    "1. Current hair — how long it is now",
+    "2. Style they want",
+  ]
+    .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
+    .join("\n");
+  fd.append("message", details);
+  const hairFile = fileFromMedia(hair, "Current-hair");
+  const inspoFile = fileFromMedia(inspo, "Style-they-want");
+  if (hairFile) fd.append("attachment", hairFile, "Current-hair.jpg");
+  if (inspoFile) fd.append("attachment", inspoFile, "Style-they-want.jpg");
   const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
     method: "POST",
     headers: { Accept: "application/json" },
