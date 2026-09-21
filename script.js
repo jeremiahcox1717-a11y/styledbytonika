@@ -175,8 +175,9 @@ if (dateInput && timeSelect && form) {
       phone,
       date,
       time,
-      service,
+      service: [service, address].filter(Boolean).join(" — "),
       address,
+      hairstyle: service,
       hours,
     };
     for (const url of bookingEndpoints()) {

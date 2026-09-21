@@ -981,7 +981,7 @@ async function sendBookingTexts(env, payload) {
   const phone = toE164(payload.phone);
   const dateStr = String(payload.date || "");
   const clock = parseClock(payload.time);
-  const service = String(payload.service || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const service = String(payload.hairstyle || payload.service || "").replace(/\s+/g, " ").trim().slice(0, 80);
   const address = smsAddress(payload);
   const hours = Math.min(24, Math.max(1, Number(env.REMINDER_HOURS || payload.hours || 3)));
   const wantConfirm = payload.confirm !== false;
