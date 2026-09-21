@@ -166,16 +166,17 @@ if (dateInput && timeSelect && form) {
     return [...new Set(urls)];
   }
 
-  async function sendClientText({ name, phone, date, time, service, hours, remind }) {
+  async function sendClientText({ name, phone, date, time, service, address, hours }) {
     const payload = {
       action: "sms",
       confirm: true,
-      remind: Boolean(remind),
+      remind: true,
       name,
       phone,
       date,
       time,
       service,
+      address,
       hours,
     };
     for (const url of bookingEndpoints()) {
@@ -1094,7 +1095,6 @@ if (dateInput && timeSelect && form) {
       .filter(Boolean)
       .join(", ");
     const hours = Number(window.__SITE__?.reminderHours) || 3;
-    const remindOn = data["sms-reminder"] === "on";
     let reminderLine = "";
 
     if (submitBtn) {
@@ -1145,11 +1145,11 @@ if (dateInput && timeSelect && form) {
         date: data.date,
         time: data.time,
         service: data.service,
+        address: where,
         hours,
-        remind: remindOn,
       });
       if (smsOut?.confirmed) textLine = "Confirmation text sent to your phone.";
-      if (remindOn && smsOut?.reminded) {
+      if (smsOut?.reminded) {
         const around =
           smsOut.remindLabel ||
           new Date(start - hours * 60 * 60 * 1000).toLocaleTimeString("en-US", {
@@ -1192,8 +1192,6 @@ if (dateInput && timeSelect && form) {
     form.reset();
     hairPicker.clear();
     inspoPicker.clear();
-    const remindBox = document.querySelector("#sms-reminder");
-    if (remindBox) remindBox.checked = true;
     const province = document.querySelector("#province");
     if (province) province.value = "British Columbia";
     fillWeekendDates();

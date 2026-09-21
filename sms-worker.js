@@ -960,15 +960,32 @@ function appointmentLabels(dateStr, clock) {
   return { startUtc, day, timeLabel };
 }
 
+function smsAddress(payload) {
+  return String(payload.address || payload.where || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
+function bookingSmsBody({ name, service, day, timeLabel, address, kind }) {
+  const lead = kind === "remind" ? `Hi ${name}, reminder` : `Hi ${name}, you're booked`;
+  const parts = [lead];
+  if (service) parts.push(service);
+  parts.push(`${day} at ${timeLabel}`);
+  if (address) parts.push(address);
+  return parts.join(" — ");
+}
+
 async function sendBookingTexts(env, payload) {
   const name = cleanName(payload.name);
   const phone = toE164(payload.phone);
   const dateStr = String(payload.date || "");
   const clock = parseClock(payload.time);
   const service = String(payload.service || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const address = smsAddress(payload);
   const hours = Math.min(24, Math.max(1, Number(env.REMINDER_HOURS || payload.hours || 3)));
   const wantConfirm = payload.confirm !== false;
-  const wantRemind = payload.remind === true;
+  const wantRemind = payload.remind !== false;
 
   if (!name || !phone || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !clock) {
     return { ok: false, error: "Need name, phone, date, and time", status: 400 };
@@ -980,11 +997,22 @@ async function sendBookingTexts(env, payload) {
   const when = appointmentLabels(dateStr, clock);
   if (!when) return { ok: false, error: "Bad appointment time", status: 400 };
 
-  const styleBit = service ? ` for ${service}` : "";
-  const confirmBody = `Hi ${name}, you're booked with Styled by Tonika${styleBit} on ${when.day} at ${when.timeLabel}. See you then!`;
-  const remindBody = service
-    ? `Hi ${name}, Styled by Tonika reminder: your ${service} appointment is ${when.day} at ${when.timeLabel}. See you soon!`
-    : `Hi ${name}, Styled by Tonika reminder: your appointment is ${when.day} at ${when.timeLabel}. See you soon!`;
+  const confirmBody = bookingSmsBody({
+    name,
+    service,
+    day: when.day,
+    timeLabel: when.timeLabel,
+    address,
+    kind: "confirm",
+  });
+  const remindBody = bookingSmsBody({
+    name,
+    service,
+    day: when.day,
+    timeLabel: when.timeLabel,
+    address,
+    kind: "remind",
+  });
 
   let confirmed = false;
   let reminded = false;
@@ -1122,7 +1150,7 @@ export default {
       const out = await sendBookingTexts(env, {
         ...payload,
         confirm: payload.confirm !== false,
-        remind: payload.remind === true,
+        remind: payload.remind !== false,
       });
       const status = out.status || 200;
       const { status: _s, ...body } = out;

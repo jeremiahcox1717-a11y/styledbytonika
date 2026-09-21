@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=73" />
+  <link rel="stylesheet" href="styles.css?v=74" />
 </head>
 <body class="book-page">
   <header class="book-top">
@@ -149,10 +149,7 @@
         <input type="checkbox" id="deposit" name="deposit" required />
         <span>I understand a non-refundable $25 deposit is required, and the remaining balance is cash only.</span>
       </label>
-      <label class="check">
-        <input type="checkbox" id="sms-reminder" name="sms-reminder" checked />
-        <span data-field="reminder-note">Text me a reminder 3 hours before my appointment with the day and time.</span>
-      </label>
+      <p class="sms-note" data-field="reminder-note">You’ll get a text right after you book, then another 3 hours before with your name, hairstyle, and address.</p>
       <p class="form-error" id="form-error" hidden></p>
       <button class="submit" type="submit">Request Appointment</button>
     </form>
@@ -181,7 +178,7 @@
   </div>
 
   <script src="site-content.js?v=11"></script>
-  <script src="script.js?v=25"></script>
+  <script src="script.js?v=26"></script>
 </body>
 </html>
 
