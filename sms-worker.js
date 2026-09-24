@@ -793,34 +793,25 @@ async function sendViaResend(env, inbox, booking, origin, hair, inspo) {
 async function sendViaFormSubmit(inbox, booking, origin, hair, inspo) {
   const fd = new FormData();
   fd.append("_subject", booking.subject);
-  fd.append("_template", "basic");
+  fd.append("_template", "box");
   fd.append("_captcha", "false");
   if (booking.email) fd.append("_replyto", booking.email);
-  const details = [
-    "Styled by Tonika — new booking",
-    "",
-    booking.name,
-    booking.service,
-    `${booking.day} at ${booking.timeLabel}`,
-    booking.phone ? `Phone: ${booking.phone}` : "",
-    booking.email ? `Email: ${booking.email}` : "",
-    booking.instagram ? `Instagram: ${booking.instagram}` : "",
-    booking.address ? `Address: ${booking.address}` : "",
-    booking.inspoUrlText ? `Inspiration link: ${booking.inspoUrlText}` : "",
-    booking.notes ? `Notes: ${booking.notes}` : "",
-    `Open with photos: ${origin}/booking/${booking.id}`,
-    "",
-    "Two photos are attached:",
-    "1. Current hair — how long it is now",
-    "2. Style they want",
-  ]
-    .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
-    .join("\n");
-  fd.append("message", details);
+  fd.append("Client", booking.name || "");
+  fd.append("Phone", booking.phone || "");
+  fd.append("Client email", booking.email || "");
+  fd.append("Instagram", booking.instagram || "(none)");
+  fd.append("Service", booking.service || "");
+  fd.append("When", `${booking.day} at ${booking.timeLabel}`.trim());
+  fd.append("Address", booking.address || "(none)");
+  if (booking.hairUrl) fd.append("Current hair photo", booking.hairUrl);
+  if (booking.inspoUrl) fd.append("Inspiration photo", booking.inspoUrl);
+  fd.append("Inspiration link", booking.inspoUrlText || "(none)");
+  fd.append("Notes", booking.notes || "(none)");
+  if (booking.id) fd.append("Open this booking", `${origin}/booking/${booking.id}`);
   const hairFile = fileFromMedia(hair, "Current-hair");
   const inspoFile = fileFromMedia(inspo, "Style-they-want");
   if (hairFile) fd.append("attachment", hairFile, "Current-hair.jpg");
-  if (inspoFile) fd.append("attachment", inspoFile, "Style-they-want.jpg");
+  if (inspoFile) fd.append("inspiration", inspoFile, "Style-they-want.jpg");
   const res = await fetch(`https://formsubmit.co/ajax/${inbox}`, {
     method: "POST",
     headers: { Accept: "application/json" },
@@ -917,11 +908,10 @@ async function notifyOwner(req, env, payload) {
   };
   if (!booking.name) return { ok: false, error: "Need a name", status: 400 };
   await persistBooking(env, booking, hair, inspo);
-  const hasPhotos = Boolean(hair || inspo);
   let via = "";
-  if (await sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo)) via = "cloudflare";
+  if (await sendViaFormSubmit(inbox, booking, origin, hair, inspo)) via = "formsubmit";
+  else if (await sendViaCloudflareEmail(env, inbox, booking, origin, hair, inspo)) via = "cloudflare";
   else if (await sendViaResend(env, inbox, booking, origin, hair, inspo)) via = "resend";
-  else if (!hasPhotos && (await sendViaFormSubmit(inbox, booking, origin, hair, inspo))) via = "formsubmit";
   if (!via) {
     return {
       ok: false,

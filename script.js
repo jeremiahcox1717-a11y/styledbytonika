@@ -895,36 +895,28 @@ if (dateInput && timeSelect && form) {
   }
 
   function bookingMailParts(inbox, subject, data, day, timeLabel, where, extras = {}) {
-    const details = [
-      "Styled by Tonika — new booking",
-      "",
-      data.name,
-      data.service,
-      `${day} at ${timeLabel}`,
-      data.phone ? `Phone: ${data.phone}` : "",
-      data.email ? `Email: ${data.email}` : "",
-      data.instagram ? `Instagram: ${data.instagram}` : "",
-      where ? `Address: ${where}` : "",
-      data.notes ? `Notes: ${data.notes}` : "",
-      extras.recapUrl ? `Open with photos: ${extras.recapUrl}` : "",
-      "",
-      "Two photos are attached:",
-      "1. Current hair — how long it is now",
-      "2. Style they want",
-    ]
-      .filter((line, i, arr) => line !== "" || (arr[i - 1] !== "" && i !== 0))
-      .join("\n");
     const parts = [
       ["_subject", subject],
-      ["_template", "basic"],
+      ["_template", "box"],
       ["_captcha", "false"],
     ];
     if (data.email) parts.push(["_replyto", data.email]);
-    parts.push(["message", details]);
+    parts.push(["Client", data.name]);
+    parts.push(["Phone", data.phone]);
+    parts.push(["Client email", data.email]);
+    parts.push(["Instagram", data.instagram || "(none)"]);
+    parts.push(["Service", data.service]);
+    parts.push(["When", `${day} at ${timeLabel}`]);
+    parts.push(["Address", where || "(none)"]);
+    if (extras.hairUrl) parts.push(["Current hair photo", extras.hairUrl]);
+    if (extras.inspoUrl) parts.push(["Inspiration photo", extras.inspoUrl]);
+    parts.push(["Inspiration link", data["inspo-url"] || "(none)"]);
+    parts.push(["Notes", data.notes || "(none)"]);
+    if (extras.recapUrl) parts.push(["Open this booking", extras.recapUrl]);
     const hair = namedJpeg(extras.hairBlob, "Current-hair.jpg");
     const inspo = namedJpeg(extras.inspoBlob, "Style-they-want.jpg");
     if (hair) parts.push(["attachment", hair]);
-    if (inspo) parts.push(["attachment", inspo]);
+    if (inspo) parts.push(["inspiration", inspo]);
     return parts;
   }
 
@@ -958,10 +950,6 @@ if (dateInput && timeSelect && form) {
     return new File([bytes], jpegName({ name: inline.filename }, "photo"), { type: "image/jpeg" });
   }
 
-  function photosInEmail(via) {
-    return via === "resend" || via === "cloudflare";
-  }
-
   async function sendBookingEmail(data, day, timeLabel, where, hairFile, inspoFile) {
     const inbox = String(window.__SITE__?.email || "styledbytonika@gmail.com").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inbox)) {
@@ -988,19 +976,25 @@ if (dateInput && timeSelect && form) {
       timeLabel,
       address: where,
       notes: data.notes || "",
+      inspoLink: data["inspo-url"] || "",
       subject,
       hair,
       inspo,
     };
 
     async function sendPhotos(extra = {}) {
-      if (!hair && !inspo) return null;
       return postFormSubmit(inbox, subject, data, day, timeLabel, where, {
         ...photoExtras,
         recapUrl: extra.recapUrl,
         hairUrl: extra.hairUrl,
         inspoUrl: extra.inspoUrl,
       });
+    }
+
+    try {
+      return await sendPhotos();
+    } catch {
+      /* try the worker next */
     }
 
     for (const url of bookingEndpoints()) {
@@ -1015,34 +1009,16 @@ if (dateInput && timeSelect && form) {
           35000
         );
         if (res.ok && out.ok) {
-          if ((hair || inspo) && !photosInEmail(out.via)) {
-            try {
-              await sendPhotos(out);
-            } catch {
-              /* booking details already reached Tonika */
-            }
-          }
           return { inbox, subject, via: out.via || "worker", recapUrl: out.recapUrl, hairUrl: out.hairUrl, inspoUrl: out.inspoUrl };
-        }
-        if (out.recapUrl) {
-          try {
-            return await sendPhotos(out);
-          } catch {
-            /* try next endpoint */
-          }
         }
       } catch {
         /* try next */
       }
     }
 
-    try {
-      return await sendPhotos();
-    } catch {
-      const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
-      openMailto(inbox, subject, body);
-      return { inbox, subject, body, via: "mailto" };
-    }
+    const body = bookingEmailBody(data, day, timeLabel, where, hairFile, inspoFile);
+    openMailto(inbox, subject, body);
+    return { inbox, subject, body, via: "mailto" };
   }
 
   form.addEventListener("submit", async (event) => {
